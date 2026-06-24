@@ -95,13 +95,15 @@ class RingBLEClient @Inject constructor(
     var activeDeviceType: RingDeviceType? = null
         private set
 
-    // Tracks whether an SpO2 measurement is currently in progress (set/cleared by callers)
+    // Tracks whether an HR or SpO2 measurement is currently in progress
+    private val _hrActive  = AtomicBoolean(false)
     private val _spO2Active = AtomicBoolean(false)
+    val hrActive:   Boolean get() = _hrActive.get()
     val spO2Active: Boolean get() = _spO2Active.get()
 
     // Sync engine forwarding — RingSyncCoordinator delegates to these
-    fun measureHR()  = activeSyncEngine?.startHeartRate()
-    fun stopHR()     = activeSyncEngine?.stopHeartRate()
+    fun measureHR()  { _hrActive.set(true);  activeSyncEngine?.startHeartRate() }
+    fun stopHR()     { _hrActive.set(false); activeSyncEngine?.stopHeartRate() }
     fun measureSpO2() { _spO2Active.set(true);  activeSyncEngine?.startSpO2() }
     fun stopSpO2()   { _spO2Active.set(false); activeSyncEngine?.stopSpO2() }
     fun findDevice() = activeSyncEngine?.findDevice()
@@ -221,6 +223,10 @@ class RingBLEClient @Inject constructor(
     }
 
     private fun resetState() {
+        // Clear measurement flags unconditionally so a disconnect mid-measurement
+        // never leaves them stuck true (the sync coroutine is cancelled, so stopHR/stopSpO2 won't run).
+        _hrActive.set(false)
+        _spO2Active.set(false)
         activeSyncEngine?.onDisconnected()
         writeChar = null
         commandChar = null

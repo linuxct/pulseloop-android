@@ -69,6 +69,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release create "v${{ steps.ver.outputs.name }}" \
-            --title "PulseLoop ${{ steps.ver.outputs.name }} (${{ steps.ver.outputs.code }})" \
+            --title "PulseLoop ${{ steps.ver.outputs.name }}" \
             --notes-file /tmp/release_notes.md \
             "app/build/outputs/apk/release/pulseloop-${{ steps.ver.outputs.name }}.apk"

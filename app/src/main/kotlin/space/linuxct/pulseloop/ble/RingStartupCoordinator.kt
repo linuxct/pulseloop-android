@@ -26,8 +26,11 @@ private const val TAG = "RingStartupCoordinator"
 private const val FOREGROUND_INTERVAL_MS = 60_000L
 private const val BACKGROUND_INTERVAL_MS = 15 * 60 * 1_000L
 // Time to let the ring finish sending sync response packets before we send
-// the SpO2 start command — jring ignores 0x23 01 while busy with history data.
+// measurement commands — jring ignores 0x23/0x14 while busy with history data.
 private const val SYNC_SETTLE_MS = 10_000L
+// How often to trigger a spot HR measurement in each mode.
+private const val FOREGROUND_HR_INTERVAL_MS = 3 * 60 * 1_000L
+private const val BACKGROUND_HR_INTERVAL_MS = BACKGROUND_INTERVAL_MS
 
 @Singleton
 class RingStartupCoordinator @Inject constructor(
@@ -38,6 +41,7 @@ class RingStartupCoordinator @Inject constructor(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var syncJob: Job? = null
     @Volatile private var isForeground = false
+    @Volatile private var lastHRTriggerMs = 0L
 
     fun start() {
         // Connection state → service lifecycle + sync loop
@@ -100,11 +104,13 @@ class RingStartupCoordinator @Inject constructor(
         val interval = if (isForeground) FOREGROUND_INTERVAL_MS else BACKGROUND_INTERVAL_MS
         val label = if (isForeground) "1-min" else "15-min"
         syncJob?.cancel()
+        lastHRTriggerMs = 0L  // reset so the first sync after connect/foreground always measures HR
         syncJob = scope.launch {
             if (syncImmediately) {
                 Log.d(TAG, "Immediate sync ($label mode)")
                 bleClient.syncNow()
                 delay(SYNC_SETTLE_MS)
+                triggerAutoHR()
                 triggerAutoSpO2()
             }
             while (true) {
@@ -113,10 +119,35 @@ class RingStartupCoordinator @Inject constructor(
                     Log.d(TAG, "$label sync tick")
                     bleClient.syncNow()
                     delay(SYNC_SETTLE_MS)
+                    triggerAutoHR()
                     triggerAutoSpO2()
                 }
             }
         }
+    }
+
+    private suspend fun triggerAutoHR() {
+        val hrInterval = if (isForeground) FOREGROUND_HR_INTERVAL_MS else BACKGROUND_HR_INTERVAL_MS
+        val now = System.currentTimeMillis()
+        if (now - lastHRTriggerMs < hrInterval) return
+        if (bleClient.hrActive) {
+            Log.d(TAG, "HR already in progress — skipping auto-trigger")
+            return
+        }
+        if (bleClient.connectionState.value != RingConnectionState.CONNECTED) return
+
+        Log.d(TAG, "Auto-triggering HR measurement (${if (isForeground) "3-min fg" else "15-min bg"})")
+        lastHRTriggerMs = now
+        bleClient.measureHR()
+        // Wait up to 30s for the first HR sample, or exit early if the ring signals
+        // it finished without a reading (HeartRateComplete = 0x27, e.g. ring not worn).
+        withTimeoutOrNull(30_000L) {
+            PulseEventBus.events.filter {
+                it is PulseEvent.HeartRateSample || it is PulseEvent.HeartRateComplete
+            }.first()
+        }
+        bleClient.stopHR()
+        Log.d(TAG, "HR auto-measurement complete")
     }
 
     private suspend fun triggerAutoSpO2() {

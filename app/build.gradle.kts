@@ -22,8 +22,8 @@ android {
         applicationId = "space.linuxct.pulseloop"
         minSdk = 35
         targetSdk = 37
-        versionCode = 4
-        versionName = "1.0.3"
+        versionCode = 5
+        versionName = "1.0.4"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         val localProps = Properties().apply {
             rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use(::load)
