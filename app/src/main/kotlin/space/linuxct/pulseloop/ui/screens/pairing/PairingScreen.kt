@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -45,6 +46,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -246,12 +248,8 @@ fun PairingScreen(onDone: () -> Unit, vm: PairingViewModel = hiltViewModel()) {
                                 }
                             }
                         } else {
-                            item {
-                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    discovered.forEach { ring ->
-                                        RingRow(ring = ring, onClick = { vm.connect(ring) })
-                                    }
-                                }
+                            items(discovered, key = { it.address }) { ring ->
+                                RingRow(ring = ring, onClick = { vm.connect(ring) })
                             }
                         }
 
@@ -291,6 +289,7 @@ private fun RingRow(ring: DiscoveredRing, onClick: () -> Unit) {
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(ring.name, fontWeight = FontWeight.Medium, fontSize = 15.sp, color = colors.textPrimary)
+                Text(ring.address, fontSize = 11.sp, color = colors.textMuted, fontFamily = FontFamily.Monospace)
                 ring.deviceType?.let { type ->
                     Text(type.name.lowercase().replaceFirstChar { it.uppercase() }, fontSize = 12.sp, color = colors.accent)
                 }
