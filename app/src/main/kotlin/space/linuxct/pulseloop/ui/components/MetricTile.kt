@@ -26,10 +26,11 @@ fun MetricTile(
     color: Color,
     modifier: Modifier = Modifier,
     unit: String? = null,
-    trend: List<Double> = emptyList()
+    trend: List<Double> = emptyList(),
+    onClick: (() -> Unit)? = null
 ) {
     val colors = LocalPulseColors.current
-    PulseCard(modifier = modifier) {
+    PulseCard(modifier = modifier, onClick = onClick) {
         Column(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(12.dp)

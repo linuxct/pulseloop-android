@@ -1,6 +1,7 @@
 package space.linuxct.pulseloop.ui.components
 
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,6 +19,7 @@ val CardShape = RoundedCornerShape(20.dp)
 fun PulseCard(
     modifier: Modifier = Modifier,
     innerPadding: Dp = 16.dp,
+    onClick: (() -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
     val colors = LocalPulseColors.current
@@ -25,6 +27,7 @@ fun PulseCard(
     Box(
         modifier = modifier
             .clip(CardShape)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .drawBehind { drawRect(bg) }
             .border(width = 1.dp, color = colors.borderSubtle, shape = CardShape)
             .padding(innerPadding)
