@@ -28,6 +28,7 @@ local.properties
 # ─── Signing keystores ────────────────────────────────────────────────────────
 *.jks
 *.keystore
+keystore.properties
 
 # ─── Android Studio captures / profiling ─────────────────────────────────────
 captures/
