@@ -3,6 +3,7 @@ package space.linuxct.pulseloop.ble
 interface RingSyncEngine {
     fun runStartup()
     fun handle(event: RingDecodedEvent)
+    fun onDisconnected() = Unit
     fun startHeartRate() = Unit
     fun stopHeartRate() = Unit
     fun startSpO2() = Unit

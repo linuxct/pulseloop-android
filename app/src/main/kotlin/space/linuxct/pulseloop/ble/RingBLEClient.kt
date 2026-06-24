@@ -221,6 +221,7 @@ class RingBLEClient @Inject constructor(
     }
 
     private fun resetState() {
+        activeSyncEngine?.onDisconnected()
         writeChar = null
         commandChar = null
         notifyChars.clear()

@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -52,6 +53,7 @@ import space.linuxct.pulseloop.ui.components.PulseCard
 import space.linuxct.pulseloop.ui.components.SecondaryButton
 import space.linuxct.pulseloop.ui.navigation.NavRoute
 import space.linuxct.pulseloop.ui.theme.LocalPulseColors
+import space.linuxct.pulseloop.update.UpdateCheckWorker
 import space.linuxct.pulseloop.ui.viewmodel.OAuthState
 import space.linuxct.pulseloop.ui.viewmodel.SettingsViewModel
 
@@ -88,7 +90,8 @@ fun SettingsScreen(navController: NavController, vm: SettingsViewModel = hiltVie
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = colors.textPrimary)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = colors.background)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = colors.background),
+                windowInsets = WindowInsets(0)
             )
 
             LazyColumn(
@@ -179,10 +182,23 @@ fun SettingsScreen(navController: NavController, vm: SettingsViewModel = hiltVie
 
                 // About / version
                 item {
+                    val packageInfo = remember {
+                        context.packageManager.getPackageInfo(context.packageName, 0)
+                    }
+                    val versionString = "${packageInfo.versionName} (${packageInfo.longVersionCode})"
                     SectionHeader("About")
                     PulseCard(modifier = Modifier.fillMaxWidth()) {
-                        StatusRow("Version", "1.0.0 (1)")
+                        StatusRow("Version", versionString)
                     }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    SecondaryButton(
+                        title = "Check for updates",
+                        onClick = {
+                            context.startActivity(
+                                Intent(Intent.ACTION_VIEW, Uri.parse(UpdateCheckWorker.RELEASES_URL))
+                            )
+                        }
+                    )
                 }
 
                 item { Spacer(modifier = Modifier.height(80.dp)) }

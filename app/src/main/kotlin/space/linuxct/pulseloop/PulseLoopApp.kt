@@ -11,6 +11,7 @@ import space.linuxct.pulseloop.ble.RingStartupCoordinator
 import space.linuxct.pulseloop.coach.CoachNotificationScheduler
 import space.linuxct.pulseloop.coach.CoachSummaryCoordinator
 import space.linuxct.pulseloop.diagnostics.DiagnosticsSubscriber
+import space.linuxct.pulseloop.update.UpdateCheckWorker
 import javax.inject.Inject
 
 @HiltAndroidApp
@@ -30,6 +31,7 @@ class PulseLoopApp : Application() {
         coachSummaryCoordinator.start()
         coachNotificationScheduler.scheduleIfNeeded(this)
         ringStartupCoordinator.start()
+        UpdateCheckWorker.schedule(this)
     }
 
     private fun createNotificationChannels() {
@@ -64,12 +66,22 @@ class PulseLoopApp : Application() {
             enableLights(false)
         }
 
-        nm.createNotificationChannels(listOf(coachChannel, workoutChannel, ringChannel))
+        val updatesChannel = NotificationChannel(
+            CHANNEL_UPDATES,
+            getString(R.string.notification_channel_updates),
+            NotificationManager.IMPORTANCE_DEFAULT
+        ).apply {
+            description = "Notifications when a new app version is available"
+            enableVibration(false)
+        }
+
+        nm.createNotificationChannels(listOf(coachChannel, workoutChannel, ringChannel, updatesChannel))
     }
 
     companion object {
         const val CHANNEL_COACH   = "pulseloop_coach"
         const val CHANNEL_WORKOUT = "pulseloop_workout"
         const val CHANNEL_RING    = "pulseloop_ring"
+        const val CHANNEL_UPDATES = "pulseloop_updates"
     }
 }

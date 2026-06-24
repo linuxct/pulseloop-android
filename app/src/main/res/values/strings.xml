@@ -4,6 +4,7 @@
     <string name="notification_channel_coach">Coach Insights</string>
     <string name="notification_channel_workout">Workout</string>
     <string name="notification_channel_ring">Ring Connection</string>
+    <string name="notification_channel_updates">App Updates</string>
     <string name="notification_coach_morning_title">Good morning, here\'s your health update</string>
     <string name="notification_coach_evening_title">Evening health summary ready</string>
     <string name="workout_notification_title">Workout in progress</string>
