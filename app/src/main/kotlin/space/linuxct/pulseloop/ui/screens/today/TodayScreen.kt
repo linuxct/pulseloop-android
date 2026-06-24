@@ -37,6 +37,7 @@ import space.linuxct.pulseloop.domain.model.TimelineEvent
 import space.linuxct.pulseloop.domain.model.TodaySummary
 import space.linuxct.pulseloop.ui.components.MetricTile
 import space.linuxct.pulseloop.ui.components.PulseCard
+import space.linuxct.pulseloop.ui.navigation.NavRoute
 import space.linuxct.pulseloop.ui.theme.LocalPulseColors
 import space.linuxct.pulseloop.ui.viewmodel.TodayViewModel
 import java.text.SimpleDateFormat
@@ -64,6 +65,14 @@ fun TodayScreen(navController: NavController, vm: TodayViewModel = hiltViewModel
 
         val s = summary!!
 
+        fun navigateTo(route: String) {
+            navController.navigate(route) {
+                popUpTo(NavRoute.Today.route) { saveState = true }
+                launchSingleTop = true
+                restoreState = true
+            }
+        }
+
         LazyColumn(
             contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 80.dp + navBarPadding),
             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -84,7 +93,8 @@ fun TodayScreen(navController: NavController, vm: TodayViewModel = hiltViewModel
                             value = s.steps?.let { "%,d".format(it) } ?: "—",
                             color = colors.steps,
                             trend = s.trends.steps7d.map { it.value },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            onClick = { navigateTo(NavRoute.Activity.route) }
                         )
                         MetricTile(
                             title = "Heart Rate",
@@ -92,7 +102,8 @@ fun TodayScreen(navController: NavController, vm: TodayViewModel = hiltViewModel
                             unit = if (s.trends.hrSamples24h.isNotEmpty() || s.latestHeartRate != null) "bpm" else null,
                             color = colors.heartRate,
                             trend = s.trends.hrSamples24h.map { it.value },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            onClick = { navigateTo(NavRoute.Vitals.route) }
                         )
                     }
                     Row(
@@ -105,13 +116,15 @@ fun TodayScreen(navController: NavController, vm: TodayViewModel = hiltViewModel
                             unit = if (s.trends.spo2Samples24h.isNotEmpty() || s.latestSpO2 != null) "%" else null,
                             color = colors.spo2,
                             trend = s.trends.spo2Samples24h.map { it.value },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            onClick = { navigateTo(NavRoute.Vitals.route) }
                         )
                         MetricTile(
                             title = "Sleep",
                             value = s.sleep?.let { formatSleepDuration(((it.session.endAt - it.session.startAt) / 60_000).toInt()) } ?: "—",
                             color = colors.sleep,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            onClick = { navigateTo(NavRoute.Sleep.route) }
                         )
                     }
                     Row(
@@ -124,7 +137,8 @@ fun TodayScreen(navController: NavController, vm: TodayViewModel = hiltViewModel
                             unit = if (s.calories != null) "kcal" else null,
                             color = colors.calories,
                             trend = s.trends.calories7d.map { it.value },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            onClick = { navigateTo(NavRoute.Activity.route) }
                         )
                         MetricTile(
                             title = "Distance",
@@ -132,7 +146,8 @@ fun TodayScreen(navController: NavController, vm: TodayViewModel = hiltViewModel
                             unit = if (s.distanceMeters != null) "km" else null,
                             color = colors.distance,
                             trend = s.trends.distance7d.map { it.value },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            onClick = { navigateTo(NavRoute.Activity.route) }
                         )
                     }
                 }

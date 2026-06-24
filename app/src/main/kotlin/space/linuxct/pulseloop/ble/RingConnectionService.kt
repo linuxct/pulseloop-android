@@ -2,12 +2,14 @@ package space.linuxct.pulseloop.ble
 
 import android.app.Notification
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
+import space.linuxct.pulseloop.MainActivity
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -51,10 +53,18 @@ class RingConnectionService : Service() {
 
     private fun buildNotification(batteryPct: Int?): Notification {
         val body = if (batteryPct != null) "Ring connected · $batteryPct%" else "Ring connected"
+        val tapIntent = PendingIntent.getActivity(
+            this, 0,
+            Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            },
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
         return NotificationCompat.Builder(this, PulseLoopApp.CHANNEL_RING)
             .setSmallIcon(R.drawable.ic_workout)
             .setContentTitle("PulseLoop")
             .setContentText(body)
+            .setContentIntent(tapIntent)
             .setOngoing(true)
             .setSilent(true)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)

@@ -266,11 +266,10 @@ object MetricsService {
      * false = 1.0 (full completed day, used for historical rows).
      */
     fun computeCalories(row: ActivityDailyEntity?, profile: UserProfileEntity?, isToday: Boolean = true): Double? {
-        // Prefer ring calories when available and non-zero from a live (non-history) source
-        if (row != null && row.source != ActivityService.RING_HISTORY_SOURCE && row.calories > 0) {
-            return row.calories
-        }
-        // Fall back to BMR estimate if profile data is sufficient
+        // If the ring has an activity row for this day, its value is authoritative — including 0.
+        // BMR fallback only applies when we have no ring data at all.
+        if (row != null) return row.calories
+        // No ring data — fall back to BMR estimate if profile is complete
         val w = profile?.weightKg ?: return null
         val h = profile.heightCm?.toDouble() ?: return null
         val a = profile.age?.toDouble() ?: return null
@@ -284,14 +283,12 @@ object MetricsService {
         } else {
             1.0
         }
-        val activeCalories = (row?.steps ?: 0) * 0.04
-        return bmr * fractionOfDay + activeCalories
+        return bmr * fractionOfDay
     }
 
     /** Returns "ring" if the row uses ring-reported calories, "bmr_estimate" otherwise. */
     fun caloriesSource(row: ActivityDailyEntity?): String =
-        if (row != null && row.source != ActivityService.RING_HISTORY_SOURCE && row.calories > 0) "ring"
-        else "bmr_estimate"
+        if (row != null) "ring" else "bmr_estimate"
 
     private fun todayMidnightMs(): Long {
         val cal = Calendar.getInstance()
