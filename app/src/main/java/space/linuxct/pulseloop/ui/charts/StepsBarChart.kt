@@ -1,0 +1,129 @@
+package space.linuxct.pulseloop.ui.charts
+
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
+import com.patrykandpatrick.vico.compose.cartesian.rememberVicoScrollState
+import com.patrykandpatrick.vico.compose.cartesian.axis.rememberAxisLabelComponent
+import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottom
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
+import com.patrykandpatrick.vico.compose.common.component.rememberLineComponent
+import com.patrykandpatrick.vico.compose.common.fill
+import com.patrykandpatrick.vico.core.cartesian.axis.HorizontalAxis
+import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
+import com.patrykandpatrick.vico.core.cartesian.data.CartesianValueFormatter
+import com.patrykandpatrick.vico.core.cartesian.data.columnSeries
+import com.patrykandpatrick.vico.core.cartesian.decoration.HorizontalLine
+import com.patrykandpatrick.vico.core.cartesian.layer.ColumnCartesianLayer
+import com.patrykandpatrick.vico.core.common.shape.CorneredShape
+import com.patrykandpatrick.vico.core.common.shape.DashedShape
+import space.linuxct.pulseloop.domain.model.DailyMetricPoint
+import space.linuxct.pulseloop.ui.theme.LocalPulseColors
+
+/**
+ * Daily steps bar chart (7-day or 30-day).
+ *
+ * Mirrors the iOS StepBarsChart: bars with rounded tops, an optional goal line, and optional
+ * labels. Falls back to a "No data" placeholder on empty input.
+ */
+@Composable
+fun StepsBarChart(
+    points: List<DailyMetricPoint>,
+    labels: List<String> = emptyList(),
+    goal: Double? = null,
+    todayIndex: Int? = null,
+    modifier: Modifier = Modifier,
+    height: Int = 160,
+) {
+    val colors = LocalPulseColors.current
+
+    if (points.isEmpty()) {
+        Box(
+            modifier = modifier.fillMaxWidth().height(height.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = "No data",
+                color = colors.textMuted,
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+        return
+    }
+
+    val values = points.map { it.value }
+    val modelProducer = remember { CartesianChartModelProducer() }
+
+    LaunchedEffect(points) {
+        modelProducer.runTransaction {
+            columnSeries { series(y = values) }
+        }
+    }
+
+    val stepsColor = colors.steps
+
+    val column = rememberLineComponent(
+        fill = fill(stepsColor.copy(alpha = 0.75f)),
+        thickness = 16.dp,
+        shape = CorneredShape.rounded(topLeftPercent = 50, topRightPercent = 50),
+    )
+
+    val columnProvider = ColumnCartesianLayer.ColumnProvider.series(column)
+
+    val showLabels = labels.size == points.size && labels.any { it.isNotBlank() }
+
+    val bottomAxis = if (showLabels) {
+        val labelFormatter = CartesianValueFormatter { _, x, _ ->
+            labels.getOrElse(x.toInt()) { "-" }
+        }
+        HorizontalAxis.rememberBottom(
+            label = rememberAxisLabelComponent(color = colors.textMuted),
+            valueFormatter = labelFormatter,
+            guideline = null,
+            line = null,
+            tick = null,
+        )
+    } else null
+
+    val goalLine = if (goal != null && goal > 0.0) {
+        rememberLineComponent(
+            fill = fill(colors.textMuted.copy(alpha = 0.6f)),
+            thickness = 1.dp,
+            shape = DashedShape(
+                shape = com.patrykandpatrick.vico.core.common.shape.Shape.Rectangle,
+                dashLengthDp = 4f,
+                gapLengthDp = 4f,
+            ),
+        )
+    } else null
+
+    val decorations = if (goalLine != null && goal != null) {
+        listOf(HorizontalLine(y = { goal }, line = goalLine))
+    } else emptyList()
+
+    val marker = rememberPulseChartMarker()
+    val layer = rememberColumnCartesianLayer(columnProvider = columnProvider)
+    val chart = rememberCartesianChart(
+        layer,
+        bottomAxis = bottomAxis,
+        decorations = decorations,
+        marker = marker,
+    )
+
+    CartesianChartHost(
+        chart = chart,
+        modelProducer = modelProducer,
+        modifier = modifier.fillMaxWidth().height(height.dp),
+        scrollState = rememberVicoScrollState(scrollEnabled = false),
+    )
+}

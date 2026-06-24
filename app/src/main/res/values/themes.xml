@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base theme: no colors defined here — Compose handles all theming -->
+    <style name="Theme.PulseLoop" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+
+    <!-- Splash screen starting theme — shown before Compose renders -->
+    <style name="Theme.PulseLoop.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#080A0F</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher</item>
+        <item name="windowSplashScreenIconBackgroundColor">#7C5CFF</item>
+        <item name="postSplashScreenTheme">@style/Theme.PulseLoop</item>
+    </style>
+</resources>

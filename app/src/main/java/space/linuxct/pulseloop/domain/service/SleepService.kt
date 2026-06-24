@@ -1,0 +1,77 @@
+package space.linuxct.pulseloop.domain.service
+
+import space.linuxct.pulseloop.data.db.entities.SleepSessionEntity
+import space.linuxct.pulseloop.data.db.entities.SleepStageBlockEntity
+import space.linuxct.pulseloop.domain.model.SleepRangeKey
+import space.linuxct.pulseloop.domain.model.SleepSummary
+import space.linuxct.pulseloop.domain.model.SleepRangeSummary
+import java.util.Calendar
+
+object SleepService {
+
+    fun latestSleep(sessions: List<SleepSessionEntity>, blocks: Map<String, List<SleepStageBlockEntity>>): SleepSummary? {
+        val session = sessions.maxByOrNull { it.startAt } ?: return null
+        val staleCutoff = todayMidnightMs() - 86_400_000L
+        if (dayMidnightMs(session.startAt) < staleCutoff) return null
+        return summary(session, blocks[session.id] ?: emptyList(), includeStages = true)
+    }
+
+    fun sleepForDate(dateMs: Long, sessions: List<SleepSessionEntity>, blocks: Map<String, List<SleepStageBlockEntity>>): SleepSummary? {
+        val dayMs = dayMidnightMs(dateMs)
+        val session = sessions.firstOrNull { dayMidnightMs(it.startAt) == dayMs } ?: return null
+        return summary(session, blocks[session.id] ?: emptyList(), includeStages = true)
+    }
+
+    fun sleepRange(range: SleepRangeKey, sessions: List<SleepSessionEntity>, blocks: Map<String, List<SleepStageBlockEntity>>): SleepRangeSummary {
+        val expected = expectedNights(range)
+        val anchor = if (range == SleepRangeKey.DAY) dayReferenceNight() else (sessions.maxByOrNull { it.startAt }?.let { dayMidnightMs(it.startAt) } ?: todayMidnightMs())
+        val startMs = anchor - (expected - 1) * 86_400_000L
+        val endMs   = anchor + 86_400_000L - 1
+        val includeStages = range == SleepRangeKey.DAY
+        val summaries = sessions.filter { it.startAt in startMs..endMs }.map { session ->
+            summary(session, blocks[session.id] ?: emptyList(), includeStages)
+        }
+        return SleepRangeSummary(range = range, start = startMs, end = anchor, expectedNights = expected, sessions = summaries)
+    }
+
+    fun dayReferenceNight(nowMs: Long = System.currentTimeMillis()): Long {
+        val cal = Calendar.getInstance().apply { timeInMillis = nowMs }
+        val hour = cal.get(Calendar.HOUR_OF_DAY)
+        val todayMidnight = todayMidnightMs()
+        return if (hour < 4) todayMidnight - 86_400_000L else todayMidnight
+    }
+
+    fun summary(session: SleepSessionEntity, blocks: List<SleepStageBlockEntity>, includeStages: Boolean = true): SleepSummary {
+        val light = blocks.filter { it.stageRaw == "light" }.sumOf { it.durationMinutes }
+        val deep  = blocks.filter { it.stageRaw == "deep" }.sumOf { it.durationMinutes }
+        val awake = blocks.filter { it.stageRaw == "awake" }.sumOf { it.durationMinutes }
+        val rem   = blocks.filter { it.stageRaw == "rem" }.sumOf { it.durationMinutes }
+        return SleepSummary(
+            session      = session,
+            blocks       = if (includeStages) blocks else emptyList(),
+            lightMinutes = light,
+            deepMinutes  = deep,
+            awakeMinutes = awake,
+            remMinutes   = rem
+        )
+    }
+
+    private fun expectedNights(range: SleepRangeKey): Int = when (range) {
+        SleepRangeKey.DAY   -> 1
+        SleepRangeKey.WEEK  -> 7
+        SleepRangeKey.MONTH -> 30
+        SleepRangeKey.YEAR  -> 365
+    }
+
+    private fun todayMidnightMs(): Long {
+        val cal = Calendar.getInstance()
+        cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0); cal.set(Calendar.MILLISECOND, 0)
+        return cal.timeInMillis
+    }
+
+    private fun dayMidnightMs(epochMs: Long): Long {
+        val cal = Calendar.getInstance().apply { timeInMillis = epochMs }
+        cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0); cal.set(Calendar.MILLISECOND, 0)
+        return cal.timeInMillis
+    }
+}

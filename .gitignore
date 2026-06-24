@@ -1,0 +1,49 @@
+# ─── Gradle ───────────────────────────────────────────────────────────────────
+.gradle/
+build/
+**/build/
+**/release/
+app/release/
+
+# ─── Android Studio / IntelliJ IDEA ──────────────────────────────────────────
+# Ignore everything under .idea; contributors re-import the project from Gradle.
+.idea/
+
+# ─── Secrets & machine-local config ──────────────────────────────────────────
+# Contains sdk.dir (machine-specific) and API keys — never commit.
+local.properties
+
+# ─── Kotlin compiler metadata ─────────────────────────────────────────────────
+.kotlin/
+
+# ─── Compiled / generated artefacts ──────────────────────────────────────────
+*.class
+*.dex
+*.ap_
+
+# ─── App bundles & APKs ───────────────────────────────────────────────────────
+*.apk
+*.aab
+
+# ─── Signing keystores ────────────────────────────────────────────────────────
+*.jks
+*.keystore
+
+# ─── Android Studio captures / profiling ─────────────────────────────────────
+captures/
+.externalNativeBuild/
+.cxx/
+
+# ─── macOS ────────────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# ─── Windows ──────────────────────────────────────────────────────────────────
+Thumbs.db
+desktop.ini
+
+# ─── Logs ─────────────────────────────────────────────────────────────────────
+*.log

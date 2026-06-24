@@ -1,0 +1,46 @@
+package space.linuxct.pulseloop.ble.colmi
+
+object ColmiCommandId {
+    const val SET_DATE_TIME: Byte           = 0x01.toByte()
+    const val BATTERY: Byte                 = 0x03.toByte()
+    const val PHONE_NAME: Byte              = 0x04.toByte()
+    const val DISPLAY_PREF: Byte            = 0x05.toByte()
+    const val POWER_OFF: Byte               = 0x08.toByte()
+    const val PREFERENCES: Byte             = 0x0a.toByte()
+    const val SYNC_HEART_RATE: Byte         = 0x15.toByte()
+    const val AUTO_HR_PREF: Byte            = 0x16.toByte()
+    const val REALTIME_HEART_RATE: Byte     = 0x1e.toByte()
+    const val REALTIME_HEART_RATE_ERROR: Byte = 0x9e.toByte()
+    const val GOALS: Byte                   = 0x21.toByte()
+    const val AUTO_SPO2_PREF: Byte          = 0x2c.toByte()
+    const val PACKET_SIZE: Byte             = 0x2f.toByte()
+    const val AUTO_STRESS_PREF: Byte        = 0x36.toByte()
+    const val SYNC_STRESS: Byte             = 0x37.toByte()
+    const val AUTO_HRV_PREF: Byte           = 0x38.toByte()
+    const val SYNC_HRV: Byte                = 0x39.toByte()
+    const val AUTO_TEMP_PREF: Byte          = 0x3a.toByte()
+    const val SYNC_ACTIVITY: Byte           = 0x43.toByte()
+    const val FIND_DEVICE: Byte             = 0x50.toByte()
+    const val MANUAL_HEART_RATE: Byte       = 0x69.toByte()
+    const val NOTIFICATION: Byte            = 0x73.toByte()
+    const val BIG_DATA_V2: Byte             = 0xbc.toByte()
+    const val FACTORY_RESET: Byte           = 0xff.toByte()
+
+    const val PREF_READ: Byte               = 0x01.toByte()
+    const val PREF_WRITE: Byte              = 0x02.toByte()
+
+    const val NOTIF_NEW_HR: Byte            = 0x01.toByte()
+    const val NOTIF_NEW_SPO2: Byte          = 0x03.toByte()
+    const val NOTIF_NEW_STEPS: Byte         = 0x04.toByte()
+    const val NOTIF_BATTERY: Byte           = 0x0c.toByte()
+    const val NOTIF_LIVE_ACTIVITY: Byte     = 0x12.toByte()
+
+    const val BIG_DATA_TEMPERATURE: Byte    = 0x25.toByte()
+    const val BIG_DATA_SLEEP: Byte          = 0x27.toByte()
+    const val BIG_DATA_SPO2: Byte           = 0x2a.toByte()
+
+    const val SLEEP_LIGHT: Byte             = 0x02.toByte()
+    const val SLEEP_DEEP: Byte              = 0x03.toByte()
+    const val SLEEP_REM: Byte               = 0x04.toByte()
+    const val SLEEP_AWAKE: Byte             = 0x05.toByte()
+}
