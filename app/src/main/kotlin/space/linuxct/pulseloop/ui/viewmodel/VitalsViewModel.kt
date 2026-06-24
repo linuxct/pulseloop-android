@@ -37,6 +37,7 @@ data class VitalsUiState(
     val peakHRToday: Double? = null,
     val capabilities: Set<WearableCapability> = emptySet(),
     val device: DeviceEntity? = null,
+    val isMeasuringHR: Boolean = false,
     val isMeasuringSpO2: Boolean = false,
     val connectionState: RingConnectionState = RingConnectionState.IDLE
 )
@@ -50,12 +51,19 @@ class VitalsViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val cutoff30d = System.currentTimeMillis() - 30L * 24 * 3_600_000
+    private val _isMeasuringHR   = MutableStateFlow(false)
     private val _isMeasuringSpO2 = MutableStateFlow(false)
 
     init {
         viewModelScope.launch {
             PulseEventBus.events.collect { event ->
                 when (event) {
+                    is PulseEvent.HeartRateComplete -> {
+                        if (_isMeasuringHR.value) {
+                            _isMeasuringHR.value = false
+                            bleClient.stopHR()
+                        }
+                    }
                     is PulseEvent.Spo2Complete -> _isMeasuringSpO2.value = false
                     is PulseEvent.Spo2Result   -> _isMeasuringSpO2.value = false
                     else -> Unit
@@ -67,8 +75,9 @@ class VitalsViewModel @Inject constructor(
     val uiState: StateFlow<VitalsUiState> = combine(
         combine(deviceRepo.observeDevice(), bleClient.connectionState) { d, c -> Pair(d, c) },
         combine(measurementRepo.observeSince(cutoff30d), activityRepo.observeAll()) { m, a -> Pair(m, a) },
+        _isMeasuringHR,
         _isMeasuringSpO2
-    ) { (device, connState), (allMeasurements, activityRows), isMeasuring ->
+    ) { (device, connState), (allMeasurements, activityRows), isMeasuringHR, isMeasuringSpO2 ->
         val caps = MetricsService.deviceCapabilities(device)
 
         val hrSamples     = MetricsService.metricRange(MetricKey.HEART_RATE,  MetricRange.TWENTY_FOUR_HOURS, allMeasurements, activityRows)
@@ -94,10 +103,22 @@ class VitalsViewModel @Inject constructor(
             peakHRToday = peakHR,
             capabilities = caps,
             device = device,
-            isMeasuringSpO2 = isMeasuring,
+            isMeasuringHR = isMeasuringHR,
+            isMeasuringSpO2 = isMeasuringSpO2,
             connectionState = connState
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), VitalsUiState())
+
+    fun startHRMeasurement() {
+        if (bleClient.hrActive) return
+        _isMeasuringHR.value = true
+        bleClient.measureHR()
+    }
+
+    fun stopHRMeasurement() {
+        _isMeasuringHR.value = false
+        bleClient.stopHR()
+    }
 
     fun startSpO2Measurement() {
         _isMeasuringSpO2.value = true

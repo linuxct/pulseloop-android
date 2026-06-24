@@ -79,12 +79,24 @@ fun VitalsScreen(vm: VitalsViewModel = hiltViewModel()) {
                     val label = hrRangeLabel(state.hrSamples.map { it.value }, state.latestHR)
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.Bottom,
                         modifier = Modifier.padding(top = 12.dp)
                     ) {
                         Text(label, fontSize = 40.sp, fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
                         if (state.hrSamples.isNotEmpty() || state.latestHR != null) {
-                            Text("bpm range", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = colors.textMuted, modifier = Modifier.padding(top = 20.dp))
+                            Text("bpm range", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = colors.textMuted, modifier = Modifier.padding(bottom = 6.dp))
                         }
+                        if (state.isMeasuringHR) {
+                            Spacer(modifier = Modifier.weight(1f))
+                            PulsingDot(color = colors.heartRate)
+                        }
+                    }
+                    if (state.isMeasuringHR) {
+                        Text(
+                            "Measuring… keep the ring still",
+                            fontSize = 12.sp, color = colors.heartRate,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
                     }
                     Text(
                         "Resting estimate: ${state.restingHREstimate?.let { "${it.toInt()}" } ?: "Calibrating"}  ·  " +
@@ -100,6 +112,34 @@ fun VitalsScreen(vm: VitalsViewModel = hiltViewModel()) {
                         )
                         state.hrSamples.size == 1 -> InlineEmptyState("First reading recorded", "Sync again later to build your trend.")
                         else -> InlineEmptyState("No HR samples yet", "Wear the ring and sync to start your trend.")
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    val isConnected = state.connectionState == RingConnectionState.CONNECTED
+                    if (state.isMeasuringHR) {
+                        SecondaryButton(
+                            title = "Stop measurement",
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                vm.stopHRMeasurement()
+                            }
+                        )
+                    } else {
+                        PrimaryButton(
+                            title = "Measure HR",
+                            enabled = isConnected,
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                vm.startHRMeasurement()
+                            }
+                        )
+                        if (!isConnected) {
+                            Text(
+                                "Ring not connected",
+                                fontSize = 11.sp,
+                                color = colors.textMuted,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -119,7 +159,7 @@ fun VitalsScreen(vm: VitalsViewModel = hiltViewModel()) {
                         }
                         if (state.isMeasuringSpO2) {
                             Spacer(modifier = Modifier.weight(1f))
-                            SpO2PulsingDot(color = colors.spo2)
+                            PulsingDot(color = colors.spo2)
                         }
                     }
 
@@ -250,7 +290,7 @@ fun VitalsScreen(vm: VitalsViewModel = hiltViewModel()) {
 }
 
 @Composable
-private fun SpO2PulsingDot(color: androidx.compose.ui.graphics.Color) {
+private fun PulsingDot(color: androidx.compose.ui.graphics.Color) {
     val transition = rememberInfiniteTransition(label = "spo2_pulse")
     val alpha by transition.animateFloat(
         initialValue = 0.3f, targetValue = 1f,

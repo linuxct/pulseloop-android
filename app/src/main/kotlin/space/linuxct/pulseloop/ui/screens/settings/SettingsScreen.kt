@@ -193,7 +193,7 @@ fun SettingsScreen(navController: NavController, vm: SettingsViewModel = hiltVie
                     val packageInfo = remember {
                         context.packageManager.getPackageInfo(context.packageName, 0)
                     }
-                    val versionString = "${packageInfo.versionName} (${packageInfo.longVersionCode})"
+                    val versionString = "${packageInfo.versionName}"
                     SectionHeader("About")
                     PulseCard(modifier = Modifier.fillMaxWidth()) {
                         StatusRow("Version", versionString)
