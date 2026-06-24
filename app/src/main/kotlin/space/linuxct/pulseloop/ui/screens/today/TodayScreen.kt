@@ -96,12 +96,13 @@ fun TodayScreen(navController: NavController, vm: TodayViewModel = hiltViewModel
                             modifier = Modifier.weight(1f),
                             onClick = { navigateTo(NavRoute.Activity.route) }
                         )
+                        val hrValues   = s.trends.hrSamples24h.map { it.value }
                         MetricTile(
                             title = "Heart Rate",
-                            value = hrRangeLabel(s.trends.hrSamples24h.map { it.value }, s.latestHeartRate),
-                            unit = if (s.trends.hrSamples24h.isNotEmpty() || s.latestHeartRate != null) "bpm" else null,
+                            value = hrRangeLabel(hrValues, s.latestHeartRate),
+                            unit = if (hrValues.isNotEmpty() || s.latestHeartRate != null) "bpm" else null,
                             color = colors.heartRate,
-                            trend = s.trends.hrSamples24h.map { it.value },
+                            trend = hrValues,
                             modifier = Modifier.weight(1f),
                             onClick = { navigateTo(NavRoute.Vitals.route) }
                         )
@@ -110,12 +111,13 @@ fun TodayScreen(navController: NavController, vm: TodayViewModel = hiltViewModel
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
+                        val spo2Values = s.trends.spo2Samples24h.map { it.value }
                         MetricTile(
                             title = "SpO2",
-                            value = averageLabel(s.trends.spo2Samples24h.map { it.value }, s.latestSpO2),
-                            unit = if (s.trends.spo2Samples24h.isNotEmpty() || s.latestSpO2 != null) "%" else null,
+                            value = averageLabel(spo2Values, s.latestSpO2),
+                            unit = if (spo2Values.isNotEmpty() || s.latestSpO2 != null) "%" else null,
                             color = colors.spo2,
-                            trend = s.trends.spo2Samples24h.map { it.value },
+                            trend = spo2Values,
                             modifier = Modifier.weight(1f),
                             onClick = { navigateTo(NavRoute.Vitals.route) }
                         )

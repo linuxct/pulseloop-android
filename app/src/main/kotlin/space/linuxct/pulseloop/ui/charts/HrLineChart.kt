@@ -57,7 +57,7 @@ fun HrLineChart(
 
     val modelProducer = remember { CartesianChartModelProducer() }
 
-    LaunchedEffect(samples) {
+    LaunchedEffect(samples.size, samples.lastOrNull()?.timestamp) {
         modelProducer.runTransaction {
             lineSeries { series(y = values) }
         }
@@ -79,7 +79,7 @@ fun HrLineChart(
         },
     )
 
-    val marker = rememberPulseChartMarker("bpm", samples)
+    val marker = rememberPulseChartMarker("bpm", samples, showGuideline = true)
     val chart = rememberCartesianChart(layer, marker = marker)
 
     CartesianChartHost(

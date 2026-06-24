@@ -141,7 +141,7 @@ class CoachViewModel @Inject constructor(
 
             val isOAuth  = !prefs.openAiRefreshToken.first().isNullOrBlank()
             val client   = if (isOAuth) OpenAIClient.forOAuth(apiKey) else OpenAIClient(apiKey)
-            val model    = prefs.coachModel.first() ?: "gpt-5.4"
+            val model    = prefs.coachModel.first()
             val orchestrator = CoachOrchestrator(
                 client   = client,
                 tools    = ToolRegistry.build(toolCtx),

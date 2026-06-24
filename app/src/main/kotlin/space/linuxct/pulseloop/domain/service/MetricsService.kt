@@ -57,8 +57,8 @@ object MetricsService {
             steps7d    = aligned.map { DailyMetricPoint(it.date, it.steps.toDouble()) },
             calories7d = aligned.map { DailyMetricPoint(it.date, it.calories) },
             distance7d = aligned.map { DailyMetricPoint(it.date, it.distanceMeters) },
-            hrSamples24h   = hrSamples,
-            spo2Samples24h = spo2Samples
+            hrSamples24h   = hrSamples.decimateForSparkline(),
+            spo2Samples24h = spo2Samples.decimateForSparkline()
         )
         val enrichedSleep = sleepSummary?.let { s ->
             if (sleepBlocks.isEmpty()) s
@@ -301,4 +301,24 @@ object MetricsService {
         cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0); cal.set(Calendar.MILLISECOND, 0)
         return cal.timeInMillis
     }
+
+    private fun List<MetricSample>.decimateForSparkline(): List<MetricSample> {
+        if (size <= SPARKLINE_MAX_POINTS) return this
+        val buckets = groupBy { it.timestamp / SPARKLINE_BUCKET_MS }
+            .entries
+            .sortedBy { it.key }
+        return buckets.mapIndexed { index, (_, group) ->
+            if (index == buckets.lastIndex) {
+                group.last()
+            } else {
+                MetricSample(
+                    timestamp = group.first().timestamp,
+                    value = group.sumOf { it.value } / group.size
+                )
+            }
+        }
+    }
+
+    private const val SPARKLINE_MAX_POINTS = 48
+    private const val SPARKLINE_BUCKET_MS  = 30 * 60 * 1_000L
 }

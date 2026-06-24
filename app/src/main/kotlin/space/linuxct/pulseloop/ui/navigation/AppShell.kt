@@ -1,5 +1,8 @@
 package space.linuxct.pulseloop.ui.navigation
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -33,7 +36,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -130,9 +132,13 @@ private fun MainTabShell(navController: NavHostController) {
         Box(modifier = Modifier.weight(1f)) {
             CompositionLocalProvider(LocalBottomNavHeight provides bottomNavHeightDp) {
             NavHost(
-                navController    = navController,
-                startDestination = NavRoute.Today.route,
-                modifier         = Modifier.fillMaxSize()
+                navController       = navController,
+                startDestination    = NavRoute.Today.route,
+                modifier            = Modifier.fillMaxSize(),
+                enterTransition     = { fadeIn(tween(300)) },
+                exitTransition      = { fadeOut(tween(300)) },
+                popEnterTransition  = { fadeIn(tween(300)) },
+                popExitTransition   = { fadeOut(tween(300)) },
             ) {
                 // Tabs
                 composable(NavRoute.Today.route)    { TodayScreen(navController) }

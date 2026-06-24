@@ -58,7 +58,7 @@ fun Spo2LineChart(
 
     val modelProducer = remember { CartesianChartModelProducer() }
 
-    LaunchedEffect(samples) {
+    LaunchedEffect(samples.size, samples.lastOrNull()?.timestamp) {
         modelProducer.runTransaction {
             lineSeries { series(y = values) }
         }
@@ -79,7 +79,7 @@ fun Spo2LineChart(
         rangeProvider = remember { CartesianLayerRangeProvider.fixed(minY = 90.0, maxY = 100.0) },
     )
 
-    val marker = rememberPulseChartMarker("%", samples)
+    val marker = rememberPulseChartMarker("%", samples, showGuideline = true)
     val chart = rememberCartesianChart(layer, marker = marker)
 
     val outerMod = if (modifier == Modifier) Modifier.fillMaxWidth().height(height.dp) else modifier

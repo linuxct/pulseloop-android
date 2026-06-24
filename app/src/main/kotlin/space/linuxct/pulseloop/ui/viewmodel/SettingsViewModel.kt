@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import space.linuxct.pulseloop.ble.RingBLEClient
 import space.linuxct.pulseloop.data.datastore.AppPreferencesDataStore
+import space.linuxct.pulseloop.data.datastore.AppPreferencesDataStore.Companion.DEFAULT_COACH_MODEL
 import space.linuxct.pulseloop.data.db.entities.DeviceEntity
 import space.linuxct.pulseloop.data.db.entities.UserGoalEntity
 import space.linuxct.pulseloop.data.db.entities.UserProfileEntity
@@ -58,6 +59,13 @@ class SettingsViewModel @Inject constructor(
 
     val openAiKey: StateFlow<String?> = prefs.openAiKey
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val coachModel: StateFlow<String> = prefs.coachModel
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DEFAULT_COACH_MODEL)
+
+    init {
+        viewModelScope.launch { prefs.initCoachModelDefault() }
+    }
 
     private val _oauthState = MutableStateFlow<OAuthState>(OAuthState.Idle)
     val oauthState: StateFlow<OAuthState> = _oauthState.asStateFlow()
@@ -151,6 +159,10 @@ class SettingsViewModel @Inject constructor(
             }
             _isCheckingUpdate.value = false
         }
+    }
+
+    fun setCoachModel(model: String) {
+        viewModelScope.launch { prefs.setCoachModel(model.trim()) }
     }
 
     fun syncNow() = bleClient.syncNow()

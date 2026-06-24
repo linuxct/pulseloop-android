@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.sp
+import com.patrykandpatrick.vico.compose.cartesian.axis.rememberAxisGuidelineComponent
 import com.patrykandpatrick.vico.compose.cartesian.marker.rememberDefaultCartesianMarker
 import com.patrykandpatrick.vico.compose.common.component.rememberShapeComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
@@ -16,6 +17,7 @@ import com.patrykandpatrick.vico.core.cartesian.marker.LineCartesianLayerMarkerT
 import com.patrykandpatrick.vico.core.common.Dimensions
 import com.patrykandpatrick.vico.core.common.shape.CorneredShape
 import space.linuxct.pulseloop.domain.model.MetricSample
+import space.linuxct.pulseloop.ui.theme.LocalPulseColors
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -25,6 +27,7 @@ fun rememberPulseChartMarker(
     unit: String = "",
     samples: List<MetricSample> = emptyList(),
     labelPosition: DefaultCartesianMarker.LabelPosition = DefaultCartesianMarker.LabelPosition.Top,
+    showGuideline: Boolean = false,
 ): CartesianMarker {
     val bubbleBg = rememberShapeComponent(
         fill = fill(Color(0xFF1E2D45)),
@@ -39,7 +42,7 @@ fun rememberPulseChartMarker(
         background = bubbleBg,
     )
     val timeFmt = remember { SimpleDateFormat("dd-MM HH:mm", Locale.getDefault()) }
-    val valueFormatter = remember(unit, samples) {
+    val valueFormatter = remember(unit, samples.size, samples.lastOrNull()?.timestamp) {
         CartesianMarkerValueFormatter { _, targets ->
             val target = targets.firstOrNull() ?: return@CartesianMarkerValueFormatter ""
             val y = when (target) {
@@ -55,5 +58,11 @@ fun rememberPulseChartMarker(
             "$valueLine$timeLine"
         }
     }
-    return rememberDefaultCartesianMarker(label = label, valueFormatter = valueFormatter, labelPosition = labelPosition)
+    val guidelineColor = LocalPulseColors.current.textPrimary
+    val guideline = if (showGuideline) {
+        rememberAxisGuidelineComponent(fill = fill(guidelineColor.copy(alpha = 0.2f)))
+    } else {
+        null
+    }
+    return rememberDefaultCartesianMarker(label = label, valueFormatter = valueFormatter, labelPosition = labelPosition, guideline = guideline)
 }

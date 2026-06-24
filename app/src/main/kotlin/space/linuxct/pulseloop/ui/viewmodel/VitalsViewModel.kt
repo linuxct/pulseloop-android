@@ -50,7 +50,7 @@ class VitalsViewModel @Inject constructor(
     private val bleClient: RingBLEClient
 ) : ViewModel() {
 
-    private val cutoff30d = System.currentTimeMillis() - 30L * 24 * 3_600_000
+    private val cutoff24h = System.currentTimeMillis() - 24L * 3_600_000
     private val _isMeasuringHR   = MutableStateFlow(false)
     private val _isMeasuringSpO2 = MutableStateFlow(false)
 
@@ -74,7 +74,7 @@ class VitalsViewModel @Inject constructor(
 
     val uiState: StateFlow<VitalsUiState> = combine(
         combine(deviceRepo.observeDevice(), bleClient.connectionState) { d, c -> Pair(d, c) },
-        combine(measurementRepo.observeSince(cutoff30d), activityRepo.observeAll()) { m, a -> Pair(m, a) },
+        combine(measurementRepo.observeSince(cutoff24h), activityRepo.observeAll()) { m, a -> Pair(m, a) },
         _isMeasuringHR,
         _isMeasuringSpO2
     ) { (device, connState), (allMeasurements, activityRows), isMeasuringHR, isMeasuringSpO2 ->
@@ -88,15 +88,17 @@ class VitalsViewModel @Inject constructor(
 
         val latestHR   = allMeasurements.filter { it.kindRaw == MeasurementKind.HEART_RATE.rawValue }.maxByOrNull { it.timestamp }?.value
         val latestSpO2 = allMeasurements.filter { it.kindRaw == MeasurementKind.SPO2.rawValue }.maxByOrNull { it.timestamp }?.value
-        val restingHR  = hrSamples.map { it.value }.filter { it <= 72 }.minOrNull()
-        val peakHR     = hrSamples.maxOfOrNull { it.value }
+
+        // Compute stats from the full-resolution list before chart decimation
+        val restingHR = hrSamples.map { it.value }.filter { it <= 72 }.minOrNull()
+        val peakHR    = hrSamples.maxOfOrNull { it.value }
 
         VitalsUiState(
-            hrSamples = hrSamples,
-            spo2Samples = spo2Samples,
-            stressSamples = stressSamples,
-            hrvSamples = hrvSamples,
-            tempSamples = tempSamples,
+            hrSamples = hrSamples.decimateForChart(),
+            spo2Samples = spo2Samples.decimateForChart(),
+            stressSamples = stressSamples.decimateForChart(),
+            hrvSamples = hrvSamples.decimateForChart(),
+            tempSamples = tempSamples.decimateForChart(),
             latestHR = latestHR,
             latestSpO2 = latestSpO2,
             restingHREstimate = restingHR,
@@ -128,5 +130,26 @@ class VitalsViewModel @Inject constructor(
     fun stopSpO2Measurement() {
         _isMeasuringSpO2.value = false
         bleClient.stopSpO2()
+    }
+
+}
+
+private const val CHART_MAX_POINTS = 48
+private const val CHART_BUCKET_MS  = 30 * 60 * 1_000L
+
+private fun List<MetricSample>.decimateForChart(): List<MetricSample> {
+    if (size <= CHART_MAX_POINTS) return this
+    val buckets = groupBy { it.timestamp / CHART_BUCKET_MS }
+        .entries
+        .sortedBy { it.key }
+    return buckets.mapIndexed { index, (_, group) ->
+        if (index == buckets.lastIndex) {
+            group.last()
+        } else {
+            MetricSample(
+                timestamp = group.first().timestamp,
+                value = group.sumOf { it.value } / group.size
+            )
+        }
     }
 }

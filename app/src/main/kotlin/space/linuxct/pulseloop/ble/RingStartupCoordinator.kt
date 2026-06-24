@@ -50,9 +50,16 @@ class RingStartupCoordinator @Inject constructor(
                 when (state) {
                     RingConnectionState.CONNECTED -> {
                         Log.d(TAG, "Ring connected — starting foreground service")
-                        context.startForegroundService(
-                            Intent(context, RingConnectionService::class.java)
-                        )
+                        try {
+                            context.startForegroundService(
+                                Intent(context, RingConnectionService::class.java)
+                            )
+                        } catch (e: Exception) {
+                            // ForegroundServiceStartNotAllowedException: OS rejects the call when
+                            // the app was cold-started from a background source and the allowance
+                            // window has elapsed. The service will start on the next foreground event.
+                            Log.w(TAG, "Could not start foreground service: ${e.message}")
+                        }
                         startSyncLoop(syncImmediately = true)
                     }
                     RingConnectionState.DISCONNECTED,

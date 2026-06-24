@@ -3,6 +3,7 @@ package space.linuxct.pulseloop.ui.screens.settings
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,9 +15,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -67,9 +70,11 @@ fun SettingsScreen(navController: NavController, vm: SettingsViewModel = hiltVie
     val openAiKey by vm.openAiKey.collectAsState()
     val oauthState by vm.oauthState.collectAsState()
     val isCheckingUpdate by vm.isCheckingUpdate.collectAsState()
+    val coachModel by vm.coachModel.collectAsState()
     var showGoalDialog by remember { mutableStateOf(false) }
     var showProfileDialog by remember { mutableStateOf(false) }
     var showForgetDialog by remember { mutableStateOf(false) }
+    var showModelDialog by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Open browser when OAuth flow or update check emits a URL
@@ -174,7 +179,22 @@ fun SettingsScreen(navController: NavController, vm: SettingsViewModel = hiltVie
                     PulseCard(modifier = Modifier.fillMaxWidth()) {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             StatusRow("OpenAI", if (openAiKey.isNullOrBlank()) "Not connected" else "Connected")
-                            StatusRow("Model", "gpt-5.4")
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { showModelDialog = true },
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Model", fontSize = 14.sp, color = colors.textSecondary)
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(coachModel, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = colors.textPrimary)
+                                    Icon(Icons.Filled.Edit, contentDescription = "Edit model", tint = colors.textMuted, modifier = Modifier.size(14.dp))
+                                }
+                            }
                         }
                     }
                     Spacer(modifier = Modifier.height(8.dp))
@@ -208,6 +228,43 @@ fun SettingsScreen(navController: NavController, vm: SettingsViewModel = hiltVie
 
                 item { Spacer(modifier = Modifier.height(80.dp)) }
             }
+        }
+
+        // Model edit dialog
+        if (showModelDialog) {
+            var modelText by remember { mutableStateOf(coachModel) }
+            val fieldColors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = colors.accent,
+                unfocusedBorderColor = colors.borderStrong,
+                focusedLabelColor = colors.accent,
+                unfocusedLabelColor = colors.textMuted,
+                focusedTextColor = colors.textPrimary,
+                unfocusedTextColor = colors.textPrimary,
+                cursorColor = colors.accent
+            )
+            AlertDialog(
+                onDismissRequest = { showModelDialog = false },
+                title = { Text("AI Model") },
+                text = {
+                    OutlinedTextField(
+                        value = modelText,
+                        onValueChange = { modelText = it },
+                        label = { Text("Model name") },
+                        singleLine = true,
+                        colors = fieldColors,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        val trimmed = modelText.trim()
+                        if (trimmed.isNotBlank()) vm.setCoachModel(trimmed)
+                        showModelDialog = false
+                    }) { Text("Save") }
+                },
+                dismissButton = { TextButton(onClick = { showModelDialog = false }) { Text("Cancel") } },
+                containerColor = colors.card
+            )
         }
 
         // Profile edit dialog

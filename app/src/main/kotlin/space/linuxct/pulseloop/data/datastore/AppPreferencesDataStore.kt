@@ -34,8 +34,14 @@ class AppPreferencesDataStore @Inject constructor(
     val openAiRefreshToken: Flow<String?> =
         dataStore.data.map { it[AppPreferences.OPENAI_REFRESH_TOKEN] }
 
-    val coachModel: Flow<String?> =
-        dataStore.data.map { it[AppPreferences.COACH_MODEL] }
+    val coachModel: Flow<String> =
+        dataStore.data.map { it[AppPreferences.COACH_MODEL] ?: DEFAULT_COACH_MODEL }
+
+    suspend fun initCoachModelDefault() = dataStore.edit { prefs ->
+        if (!prefs.contains(AppPreferences.COACH_MODEL)) {
+            prefs[AppPreferences.COACH_MODEL] = DEFAULT_COACH_MODEL
+        }
+    }
 
     suspend fun setOpenAiKey(key: String?) = dataStore.edit {
         if (key.isNullOrBlank()) it.remove(AppPreferences.OPENAI_API_KEY)
@@ -76,4 +82,8 @@ class AppPreferencesDataStore @Inject constructor(
 
     suspend fun setCoachEnabled(enabled: Boolean) =
         dataStore.edit { it[AppPreferences.COACH_ENABLED] = enabled }
+
+    companion object {
+        const val DEFAULT_COACH_MODEL = "gpt-5.4"
+    }
 }

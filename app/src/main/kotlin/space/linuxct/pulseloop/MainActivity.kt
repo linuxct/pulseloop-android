@@ -55,6 +55,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        navController?.handleDeepLink(intent)
+        // Only forward actual deep-link intents; plain notification-tap intents have no
+        // nav data and calling handleDeepLink on them causes a NPE inside the nav library.
+        if (intent.data != null) {
+            navController?.handleDeepLink(intent)
+        }
     }
 }
