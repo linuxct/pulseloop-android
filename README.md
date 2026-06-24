@@ -1,5 +1,7 @@
 # PulseLoop Android
 
+<img src="app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png" width="96" alt="PulseLoop icon">
+
 > **Vibe-coded project notice**
 > This app was built entirely with AI assistance (Claude) from scratch — it is not a manually maintained codebase.
 > The original app is **[PulseLoopIOS](https://github.com/saksham2001/PulseLoopIOS)**, an iOS app for the same smart ring hardware, which actually did the groundwork for supporting these ring devices in the first place.
