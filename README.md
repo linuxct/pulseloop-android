@@ -1,6 +1,8 @@
-# PulseLoop Android
+<p align="center" width="100%">
+  <img src="app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png" alt="logo"><br/>
+</p>
 
-<img src="app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png" width="96" alt="PulseLoop icon">
+# PulseLoop for Android<br/> [![Latest Version](https://img.shields.io/github/v/release/linuxct/pulseloop-android)](https://github.com/linuxct/pulseloop-android/releases/latest) ![Compatibility](https://img.shields.io/badge/compat-API%2035%2B-brightgreen)
 
 > **Vibe-coded project notice**
 > This app was built entirely with AI assistance (Claude) from scratch — it is not a manually maintained codebase.
