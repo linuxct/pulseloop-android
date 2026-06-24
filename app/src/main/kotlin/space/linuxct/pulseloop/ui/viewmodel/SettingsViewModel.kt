@@ -1,8 +1,10 @@
 package space.linuxct.pulseloop.ui.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,6 +27,8 @@ import space.linuxct.pulseloop.domain.model.RingConnectionState
 import space.linuxct.pulseloop.domain.repository.DeviceRepository
 import space.linuxct.pulseloop.domain.repository.MeasurementRepository
 import space.linuxct.pulseloop.domain.repository.ProfileRepository
+import space.linuxct.pulseloop.update.UpdateCheckWorker
+import space.linuxct.pulseloop.update.UpdateChecker
 import javax.inject.Inject
 
 data class SettingsUiState(
@@ -42,6 +46,7 @@ sealed class OAuthState {
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val deviceRepo: DeviceRepository,
     private val profileRepo: ProfileRepository,
     private val measurementRepo: MeasurementRepository,
@@ -59,6 +64,12 @@ class SettingsViewModel @Inject constructor(
 
     private val _launchBrowser = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val launchBrowser: SharedFlow<String> = _launchBrowser
+
+    private val _snackbarMessage = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val snackbarMessage: SharedFlow<String> = _snackbarMessage
+
+    private val _isCheckingUpdate = MutableStateFlow(false)
+    val isCheckingUpdate: StateFlow<Boolean> = _isCheckingUpdate.asStateFlow()
 
     private var oauthJob: Job? = null
 
@@ -126,6 +137,19 @@ class SettingsViewModel @Inject constructor(
             } else {
                 profileRepo.upsertGoals(UserGoalEntity(dailySteps = steps, sleepMinutes = sleepMinutes, activeMinutes = activeMinutes, updatedAt = now))
             }
+        }
+    }
+
+    fun checkForUpdates() {
+        if (_isCheckingUpdate.value) return
+        viewModelScope.launch {
+            _isCheckingUpdate.value = true
+            when (val result = UpdateChecker.check(context)) {
+                is UpdateChecker.Result.UpdateAvailable -> _launchBrowser.emit(UpdateCheckWorker.RELEASES_URL)
+                is UpdateChecker.Result.NoUpdate -> _snackbarMessage.emit("No updates found")
+                is UpdateChecker.Result.Error -> _snackbarMessage.emit("Could not check for updates")
+            }
+            _isCheckingUpdate.value = false
         }
     }
 

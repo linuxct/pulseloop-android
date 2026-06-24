@@ -14,11 +14,6 @@ import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import org.json.JSONObject
 import space.linuxct.pulseloop.PulseLoopApp
 import space.linuxct.pulseloop.R
 import java.util.concurrent.TimeUnit
@@ -28,50 +23,12 @@ class UpdateCheckWorker(
     params: WorkerParameters
 ) : CoroutineWorker(context, params) {
 
-    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-        try {
-            val currentVersion = context.packageManager
-                .getPackageInfo(context.packageName, 0).versionName
-                ?: return@withContext Result.success()
-
-            val client = OkHttpClient.Builder()
-                .connectTimeout(15, TimeUnit.SECONDS)
-                .readTimeout(15, TimeUnit.SECONDS)
-                .build()
-
-            val request = Request.Builder()
-                .url("https://api.github.com/repos/linuxct/pulseloop-android/releases/latest")
-                .header("Accept", "application/vnd.github+json")
-                .header("X-GitHub-Api-Version", "2022-11-28")
-                .header("User-Agent", "PulseLoop-Android/$currentVersion")
-                .build()
-
-            val body = client.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) return@withContext Result.success()
-                response.body?.string()
-            } ?: return@withContext Result.success()
-
-            val tagName = JSONObject(body).optString("tag_name").trimStart('v')
-            if (tagName.isNotBlank() && isNewerVersion(remote = tagName, local = currentVersion)) {
-                postUpdateNotification(tagName)
-            }
-
-            Result.success()
-        } catch (_: Exception) {
-            Result.success()
+    override suspend fun doWork(): Result {
+        val result = UpdateChecker.check(context)
+        if (result is UpdateChecker.Result.UpdateAvailable) {
+            postUpdateNotification(result.version)
         }
-    }
-
-    private fun isNewerVersion(remote: String, local: String): Boolean {
-        val r = remote.split('.').mapNotNull { it.toIntOrNull() }
-        val l = local.split('.').mapNotNull { it.toIntOrNull() }
-        for (i in 0 until maxOf(r.size, l.size)) {
-            val rv = r.getOrElse(i) { 0 }
-            val lv = l.getOrElse(i) { 0 }
-            if (rv > lv) return true
-            if (rv < lv) return false
-        }
-        return false
+        return Result.success()
     }
 
     private fun postUpdateNotification(newVersion: String) {

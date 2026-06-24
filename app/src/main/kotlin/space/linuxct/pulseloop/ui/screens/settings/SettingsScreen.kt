@@ -26,6 +26,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -39,8 +42,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -53,7 +54,6 @@ import space.linuxct.pulseloop.ui.components.PulseCard
 import space.linuxct.pulseloop.ui.components.SecondaryButton
 import space.linuxct.pulseloop.ui.navigation.NavRoute
 import space.linuxct.pulseloop.ui.theme.LocalPulseColors
-import space.linuxct.pulseloop.update.UpdateCheckWorker
 import space.linuxct.pulseloop.ui.viewmodel.OAuthState
 import space.linuxct.pulseloop.ui.viewmodel.SettingsViewModel
 
@@ -66,14 +66,22 @@ fun SettingsScreen(navController: NavController, vm: SettingsViewModel = hiltVie
     val connectionState by vm.connectionState.collectAsState()
     val openAiKey by vm.openAiKey.collectAsState()
     val oauthState by vm.oauthState.collectAsState()
+    val isCheckingUpdate by vm.isCheckingUpdate.collectAsState()
     var showGoalDialog by remember { mutableStateOf(false) }
     var showProfileDialog by remember { mutableStateOf(false) }
     var showForgetDialog by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    // Open browser when OAuth flow emits a URL
+    // Open browser when OAuth flow or update check emits a URL
     LaunchedEffect(Unit) {
         vm.launchBrowser.collect { url ->
             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        vm.snackbarMessage.collect { message ->
+            snackbarHostState.showSnackbar(message)
         }
     }
 
@@ -192,12 +200,9 @@ fun SettingsScreen(navController: NavController, vm: SettingsViewModel = hiltVie
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     SecondaryButton(
-                        title = "Check for updates",
-                        onClick = {
-                            context.startActivity(
-                                Intent(Intent.ACTION_VIEW, Uri.parse(UpdateCheckWorker.RELEASES_URL))
-                            )
-                        }
+                        title = if (isCheckingUpdate) "Checking…" else "Check for updates",
+                        enabled = !isCheckingUpdate,
+                        onClick = { vm.checkForUpdates() }
                     )
                 }
 
@@ -373,6 +378,18 @@ fun SettingsScreen(navController: NavController, vm: SettingsViewModel = hiltVie
                 containerColor = colors.card
             )
         }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter),
+            snackbar = { data ->
+                Snackbar(
+                    snackbarData = data,
+                    containerColor = colors.card,
+                    contentColor = colors.textPrimary
+                )
+            }
+        )
     }
 }
 
