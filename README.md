@@ -32,8 +32,8 @@ The home screen gives you a full picture of your day at a glance:
 ### Vitals
 Dedicated charts for continuous health metrics:
 - **Heart rate**: a line chart of all HR readings; tap any point for a popup showing the exact value and timestamp
-- **SpO₂**: a line chart of blood oxygen readings with the same tap-to-inspect behaviour
-- **Manual SpO₂ measurement**: a trigger button starts a live measurement from the ring, shown with a pulsing indicator and "Measuring…" status while the ring samples and returns the result
+- **SpO₂**: a line chart of blood oxygen readings with the same tap-to-inspect behaviour; since the ring does not store SpO₂ in its own history, the app automatically triggers a live measurement from the ring on every sync cycle and saves the result
+- **On-demand SpO₂ measurement**: a trigger button in the Vitals screen starts an additional live measurement at any time, shown with a pulsing indicator and "Measuring…" status while the ring samples and returns the result
 
 ### Sleep
 Full sleep architecture visualisation for every night:
@@ -82,10 +82,10 @@ A developer-facing debug screen accessible from the header:
 
 | Device | Heart Rate | SpO₂ | Steps | Sleep | Activity |
 |--------|-----------|-------|-------|-------|----------|
-| jring | ✓ | Manual trigger | ✓ | ✓ | ✓ |
+| jring | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Colmi R02 | ✓ | ✓ | ✓ | ✓ | ✓ |
 
-> **jring note**: SpO₂ on jring is a manual-only measurement — the ring does not store SpO₂ in its history. Tapping "Measure SpO₂" in the Vitals screen triggers a live reading from the ring.
+> **jring note**: The jring does not store SpO₂ readings in its internal history the way it does for heart rate. The app works around this by automatically triggering a live SpO₂ measurement on every sync cycle. An additional on-demand measurement can also be triggered at any time from the Vitals screen.
 
 ## Requirements
 
