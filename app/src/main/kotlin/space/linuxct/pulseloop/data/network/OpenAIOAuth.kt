@@ -82,7 +82,7 @@ private suspend fun requestToken(vararg params: Pair<String, String>): OAuthToke
         val req  = Request.Builder().url(TOKEN_URL).post(body).build()
         val resp = http.newCall(req).execute()
         val text = resp.body?.string() ?: error("Empty token response")
-        if (!resp.isSuccessful) error("Token request failed ${resp.code}: $text")
+        if (!resp.isSuccessful) error("Token request failed ${resp.code}")
         val j = JSONObject(text)
         OAuthTokens(
             accessToken  = j.getString("access_token"),

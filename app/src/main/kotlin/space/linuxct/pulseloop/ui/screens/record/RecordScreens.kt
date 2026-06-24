@@ -538,7 +538,7 @@ fun RecordSummaryScreen(sessionId: String, navController: NavController, vm: Rec
     val gpsPoints by vm.gpsPoints.collectAsState()
     var showDeleteDialog by remember { mutableStateOf(false) }
 
-    remember(sessionId) { vm.load(sessionId) }
+    LaunchedEffect(sessionId) { vm.load(sessionId) }
 
     Box(
         modifier = Modifier

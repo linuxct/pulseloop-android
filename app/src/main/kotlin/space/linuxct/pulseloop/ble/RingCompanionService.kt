@@ -11,6 +11,7 @@ class RingCompanionService : CompanionDeviceService() {
 
     @Inject lateinit var ringBLEClient: RingBLEClient
 
+    @android.annotation.SuppressLint("NewApi")
     override fun onDevicePresenceEvent(event: DevicePresenceEvent) {
         when (event.event) {
             DevicePresenceEvent.EVENT_BLE_APPEARED -> {

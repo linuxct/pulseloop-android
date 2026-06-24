@@ -65,9 +65,8 @@ class OpenAIClient(
 
         val resp = http.newCall(req).execute()
         if (!resp.isSuccessful) {
-            val text = resp.body?.string() ?: "(no body)"
-            Log.e("OpenAIClient", "HTTP ${resp.code} from $responsesUrl — body: $text")
-            throw IOException("OpenAI API error ${resp.code}: $text")
+            Log.e("OpenAIClient", "HTTP ${resp.code} from $responsesUrl")
+            throw IOException("OpenAI API error ${resp.code}")
         }
 
         val responseBody = resp.body ?: throw IOException("Empty response body")
@@ -113,9 +112,8 @@ class OpenAIClient(
                             if (out != null && out.length() > 0) completedOutputArr = out
                         }
                         "error" -> {
-                            val msg = event.optString("message", data)
-                            Log.e("OpenAIClient", "SSE error event: $msg")
-                            throw IOException("API stream error: $msg")
+                            Log.e("OpenAIClient", "SSE error event received")
+                            throw IOException("API stream error")
                         }
                     }
                 } catch (ioe: IOException) { throw ioe } catch (_: Exception) { }
