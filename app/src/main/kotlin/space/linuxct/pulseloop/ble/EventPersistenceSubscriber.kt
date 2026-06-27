@@ -113,46 +113,66 @@ class EventPersistenceSubscriber @Inject constructor(
 
     private suspend fun applyActivityUpdate(event: PulseEvent.ActivityUpdate) {
         val now = System.currentTimeMillis()
-        // Use the ring's own timestamp to determine the calendar day so that a sync
-        // happening shortly after midnight (before the ring resets its counter) doesn't
-        // incorrectly write yesterday's total into today's bucket. The ring's clock is
-        // synced to the phone at startup, so its timestamp is reliable. Fall back to
-        // today if the ring sends an invalid/un-synced timestamp.
         val dayMs = if (event.timestamp in (now - 2 * 86_400_000L)..(now + 60_000L)) {
             dayMidnightFor(event.timestamp)
         } else {
             todayMidnightMs()
         }
 
+        if (event.steps <= 0) return  // ring sent 0 — can't derive anything useful
+
         val existing = activityRepo.getForDate(dayMs)
 
         if (existing == null) {
-            // First record for this day. Before inserting, detect a cross-day carry-over:
-            // some rings delay their midnight counter reset, so the first reading of a new
-            // day reports the same total as the previous day. Skip the write and wait for
-            // the next sync once the ring's counter has actually reset.
-            val prevDayMs = dayMs - 86_400_000L
-            val prev = activityRepo.getForDate(prevDayMs)
-            if (prev != null && event.steps > 0 && event.steps == prev.steps) {
-                return
+            // First record for this calendar day.
+            // The jring ring sends a CUMULATIVE step total since its last hardware reset
+            // (not since midnight). Detect this by reconstructing yesterday's final ring
+            // reading and comparing: if today's reading already exceeds it, the ring
+            // hasn't reset yet — store the daily delta instead of the raw value.
+            val prev = activityRepo.getForDate(dayMs - 86_400_000L)
+            // Reconstruct the ring's cumulative value at the end of the previous day:
+            // baseline + whatever was counted in the last window of that day.
+            val prevRingReading = if (prev != null) prev.stepBaseline + (prev.steps - prev.stepsSaved) else 0
+            val (stepsToStore, baseline) = when {
+                prev == null                      -> Pair(event.steps, 0)
+                event.steps == prevRingReading    -> return   // stale / identical reading
+                event.steps > prevRingReading     -> Pair(event.steps - prevRingReading, prevRingReading)
+                else                              -> Pair(event.steps, 0)  // ring reset before midnight
             }
             activityRepo.upsert(ActivityDailyEntity(
                 id = newUUID(), date = dayMs,
-                steps = event.steps, calories = event.calories, distanceMeters = event.distanceMeters,
-                activeMinutes = 0, source = ActivityService.RING_HISTORY_SOURCE, updatedAt = System.currentTimeMillis()
+                steps = stepsToStore, stepBaseline = baseline, stepsSaved = 0,
+                calories = event.calories, distanceMeters = event.distanceMeters,
+                activeMinutes = 0, source = ActivityService.RING_HISTORY_SOURCE,
+                updatedAt = System.currentTimeMillis()
             ))
         } else {
-            // Update an existing record. The ring's step counter is monotonically
-            // increasing within a day, so a significant drop signals a delayed midnight
-            // reset — trust the new lower value instead of clamping with maxOf.
-            val newSteps = when {
-                event.steps <= 0               -> existing.steps          // zero guard: transient glitch
-                event.steps >= existing.steps  -> event.steps             // normal accumulation
-                event.steps < existing.steps / 2 -> event.steps          // >50 % drop → delayed reset
-                else                           -> existing.steps          // minor jitter, keep stored
+            // Reconstruct the ring's last known cumulative value for this day.
+            // Formula: baseline (window start) + delta walked in this window.
+            val lastRingValue = existing.stepBaseline + (existing.steps - existing.stepsSaved)
+
+            val isReset = event.steps < existing.stepBaseline || event.steps < lastRingValue / 2
+
+            val (newSteps, newBaseline, newSaved) = if (isReset) {
+                // Ring hardware reset mid-day. Save the full daily total accumulated so
+                // far into stepsSaved, then open a new window from 0. Add the ring's
+                // current reading (steps walked since the reset) immediately so nothing
+                // is lost even if we didn't catch the ring at exactly 0.
+                Triple(existing.steps + event.steps, 0, existing.steps)
+            } else {
+                val candidate = existing.stepsSaved + (event.steps - existing.stepBaseline)
+                if (candidate >= existing.steps) {
+                    Triple(candidate, existing.stepBaseline, existing.stepsSaved)
+                } else {
+                    // Minor jitter — ring reading dipped slightly, keep current total.
+                    Triple(existing.steps, existing.stepBaseline, existing.stepsSaved)
+                }
             }
+
             activityRepo.upsert(existing.copy(
                 steps = newSteps,
+                stepBaseline = newBaseline,
+                stepsSaved = newSaved,
                 calories = maxOf(existing.calories, event.calories),
                 distanceMeters = maxOf(existing.distanceMeters, event.distanceMeters),
                 updatedAt = System.currentTimeMillis()

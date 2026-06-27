@@ -56,7 +56,7 @@ import space.linuxct.pulseloop.data.db.entities.WearableLogEntity
         CoachSummaryEntity::class,
         WearableLogEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 abstract class PulseDatabase : RoomDatabase() {
