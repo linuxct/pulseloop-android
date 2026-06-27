@@ -10,6 +10,9 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import space.linuxct.pulseloop.data.db.MIGRATION_1_2
+import space.linuxct.pulseloop.data.db.MIGRATION_2_3
+import space.linuxct.pulseloop.data.db.MIGRATION_3_4
 import space.linuxct.pulseloop.data.db.PulseDatabase
 import javax.inject.Singleton
 
@@ -23,7 +26,7 @@ object AppModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): PulseDatabase =
         Room.databaseBuilder(context, PulseDatabase::class.java, "pulse_database")
-            .fallbackToDestructiveMigration(dropAllTables = true)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
             .build()
 
     @Provides
