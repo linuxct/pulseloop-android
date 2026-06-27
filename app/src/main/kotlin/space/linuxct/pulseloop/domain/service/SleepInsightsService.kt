@@ -58,7 +58,7 @@ object SleepScore {
     }
 
     fun calculate(sleep: SleepSummary): SleepScoreResult {
-        val totalMinutes = maxOf(0, sleep.session.let { (it.endAt - it.startAt).toInt() / 60_000 })
+        val totalMinutes = maxOf(0, sleep.totalMinutes)
         val total  = totalMinutes.toDouble()
         val deep   = maxOf(0, sleep.deepMinutes).toDouble()
         val light  = maxOf(0, sleep.lightMinutes).toDouble()
@@ -110,17 +110,12 @@ object SleepInsights {
     private const val MIN_AGG_NIGHTS = 2
 
     fun validSessions(sessions: List<SleepSummary>): List<SleepSummary> {
-        val cal = Calendar.getInstance()
-        return sessions.filter { s ->
-            cal.timeInMillis = s.session.endAt
-            cal.timeInMillis = s.session.startAt
-            (s.session.endAt - s.session.startAt) > 0
-        }
+        return sessions.filter { s -> s.totalMinutes > 0 }
     }
 
     fun averageDuration(valid: List<SleepSummary>): Int? {
         if (valid.isEmpty()) return null
-        return valid.sumOf { (it.session.endAt - it.session.startAt).toInt() / 60_000 } / valid.count()
+        return valid.sumOf { it.totalMinutes } / valid.count()
     }
 
     fun averageScore(valid: List<SleepSummary>): Int? {
@@ -142,7 +137,7 @@ object SleepInsights {
         if (valid.size < 2) return null
         val avg = averageDuration(valid)?.toDouble() ?: return null
         val variance = valid.sumOf { s ->
-            val d = ((s.session.endAt - s.session.startAt) / 60_000 - avg).pow(2)
+            val d = (s.totalMinutes - avg).pow(2)
             d
         } / valid.count()
         return sqrt(variance)
@@ -165,7 +160,7 @@ object SleepInsights {
     }
 
     fun dayCoach(sleep: SleepSummary, score: Int, awakePct: Int?, deepPct: Int, activitySteps: Int?): SleepCoach {
-        val totalMin = (sleep.session.endAt - sleep.session.startAt).toInt() / 60_000
+        val totalMin = sleep.totalMinutes
         var chips = mutableListOf<String>()
         if (totalMin in 420..540) chips.add("Good duration")
         if (deepPct in 13..23) chips.add("Deep sleep balanced")
@@ -274,7 +269,7 @@ object SleepInsights {
         val lastMs = run { val c2 = Calendar.getInstance(); c2.timeInMillis = endMs; c2.set(Calendar.HOUR_OF_DAY, 0); c2.set(Calendar.MINUTE, 0); c2.set(Calendar.SECOND, 0); c2.set(Calendar.MILLISECOND, 0); c2.timeInMillis }
         while (cal.timeInMillis <= lastMs) {
             val session = byDate[cal.timeInMillis]
-            val totalMin = session?.let { ((it.session.endAt - it.session.startAt) / 60_000).toInt() } ?: 0
+            val totalMin = session?.totalMinutes ?: 0
             val present = totalMin > 0
             val label = if (range == SleepRangeKey.WEEK) {
                 arrayOf("S","M","T","W","T","F","S")[cal.get(Calendar.DAY_OF_WEEK) - 1]

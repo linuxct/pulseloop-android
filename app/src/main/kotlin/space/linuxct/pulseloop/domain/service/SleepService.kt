@@ -42,18 +42,47 @@ object SleepService {
     }
 
     fun summary(session: SleepSessionEntity, blocks: List<SleepStageBlockEntity>, includeStages: Boolean = true): SleepSummary {
-        val light = blocks.filter { it.stageRaw == "light" }.sumOf { it.durationMinutes }
-        val deep  = blocks.filter { it.stageRaw == "deep" }.sumOf { it.durationMinutes }
-        val awake = blocks.filter { it.stageRaw == "awake" }.sumOf { it.durationMinutes }
-        val rem   = blocks.filter { it.stageRaw == "rem" }.sumOf { it.durationMinutes }
+        val filled = withFilledGaps(session, blocks)
+        val light = filled.filter { it.stageRaw == "light" }.sumOf { it.durationMinutes }
+        val deep  = filled.filter { it.stageRaw == "deep" }.sumOf { it.durationMinutes }
+        val awake = filled.filter { it.stageRaw == "awake" }.sumOf { it.durationMinutes }
+        val rem   = filled.filter { it.stageRaw == "rem" }.sumOf { it.durationMinutes }
         return SleepSummary(
             session      = session,
-            blocks       = if (includeStages) blocks else emptyList(),
+            blocks       = if (includeStages) filled else emptyList(),
             lightMinutes = light,
             deepMinutes  = deep,
             awakeMinutes = awake,
             remMinutes   = rem
         )
+    }
+
+    // The jring omits 15-minute windows from its sleep history dump when the person was awake
+    // during that period — it only sends packets for LIGHT and DEEP windows. Gaps between
+    // consecutive blocks are therefore brief awakenings; fill them so the chart and stats
+    // reflect reality instead of showing silent holes.
+    private fun withFilledGaps(session: SleepSessionEntity, blocks: List<SleepStageBlockEntity>): List<SleepStageBlockEntity> {
+        if (blocks.isEmpty()) return blocks
+        val sorted = blocks.sortedBy { it.startAt }
+        val result = mutableListOf<SleepStageBlockEntity>()
+        for (i in sorted.indices) {
+            result.add(sorted[i])
+            if (i + 1 < sorted.size) {
+                val blockEndMs  = sorted[i].startAt + sorted[i].durationMinutes * 60_000L
+                val nextStartMs = sorted[i + 1].startAt
+                val gapMinutes  = ((nextStartMs - blockEndMs) / 60_000L).toInt()
+                if (gapMinutes > 0) {
+                    result.add(SleepStageBlockEntity(
+                        id              = "synth_awake_$blockEndMs",
+                        sessionId       = session.id,
+                        stageRaw        = "awake",
+                        startAt         = blockEndMs,
+                        durationMinutes = gapMinutes
+                    ))
+                }
+            }
+        }
+        return result
     }
 
     private fun expectedNights(range: SleepRangeKey): Int = when (range) {

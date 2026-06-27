@@ -258,7 +258,7 @@ private fun RangeSelector(selected: SleepRangeKey, onSelect: (SleepRangeKey) -> 
 private fun SleepHeroCard(sleep: SleepSummary) {
     val colors = LocalPulseColors.current
     val score = SleepScore.calculate(sleep)
-    val totalMin = ((sleep.session.endAt - sleep.session.startAt) / 60_000).toInt()
+    val totalMin = sleep.totalMinutes
 
     PulseCard(modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {

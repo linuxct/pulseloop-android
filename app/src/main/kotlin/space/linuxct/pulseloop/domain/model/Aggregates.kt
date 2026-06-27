@@ -108,7 +108,12 @@ data class SleepSummary(
     val deepMinutes: Int,
     val awakeMinutes: Int,
     val remMinutes: Int = 0
-)
+) {
+    val totalMinutes: Int get() {
+        val fromBlocks = lightMinutes + deepMinutes + awakeMinutes + remMinutes
+        return if (fromBlocks > 0) fromBlocks else ((session.endAt - session.startAt) / 60_000).toInt()
+    }
+}
 
 data class SleepRangeSummary(
     val range: SleepRangeKey,
