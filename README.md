@@ -22,11 +22,37 @@ The headline additions in this release:
 - **Extended ring vitals** — blood pressure, blood sugar, stress, and fatigue (jring), read alongside SpO₂, with calibration and an explicit opt-in.
 - **Browse your history** — a built-in date/calendar picker lets you scroll back to any past day on the Vitals, Activity, and Sleep screens.
 
+## Screenshots
+
+PulseLoop ships with **two complete, runtime-switchable UI styles**. Both render the same data and features — they just look and feel different, so you can pick whichever you prefer from **Settings → Appearance**.
+
+### Original design (V1)
+
+The original, high-contrast, purple accents PulseLoop look — the default theme.
+
+| | | |
+|:--:|:--:|:--:|
+| <img src="https://i.imgur.com/m5qLxFl.png" width="250" alt="Today (light)"><br/>**Today**<br/><sub>Daily dashboard · light</sub> | <img src="https://i.imgur.com/fX8tlY4.png" width="250" alt="Today with extended vitals (dark)"><br/>**Today · extended vitals**<br/><sub>BP &amp; blood-sugar tiles · dark</sub> | <img src="https://i.imgur.com/L2A43Dr.png" width="250" alt="Vitals 24h (light)"><br/>**Vitals · 24h**<br/><sub>Heart rate &amp; SpO₂ with tooltips · light</sub> |
+| <img src="https://i.imgur.com/fLpTU6I.png" width="250" alt="Vitals week (light)"><br/>**Vitals · Week**<br/><sub>Weekly HR, SpO₂ &amp; stress · light</sub> | <img src="https://i.imgur.com/TpmZt87.png" width="250" alt="Activity today (dark)"><br/>**Activity · Today**<br/><sub>Steps, calories &amp; workouts · dark</sub> | <img src="https://i.imgur.com/LhmMZGN.png" width="250" alt="Activity week (dark)"><br/>**Activity · Week**<br/><sub>7-day steps &amp; calories · dark</sub> |
+| <img src="https://i.imgur.com/mMA8jqc.png" width="250" alt="Sleep night (light)"><br/>**Sleep · Night**<br/><sub>Score &amp; stage architecture · light</sub> | <img src="https://i.imgur.com/t1a0xQM.png" width="250" alt="Sleep week (dark)"><br/>**Sleep · Week**<br/><sub>7-night duration trend · dark</sub> | <img src="https://i.imgur.com/qS0qFre.png" width="250" alt="Settings (dark)"><br/>**Settings**<br/><sub>Profile, ring &amp; goals · dark</sub> |
+| <img src="https://i.imgur.com/dTyib3u.png" width="250" alt="Debug (dark)"><br/>**Debug**<br/><sub>Live BLE packet feed · dark</sub> | | |
+
+### Material 3 Expressive with Material You — P4 mode (V2)
+
+Android's Material 3 Expressive design with Material You dynamic color, drawn from your wallpaper on Android 12+.
+
+| | | |
+|:--:|:--:|:--:|
+| <img src="https://i.imgur.com/uHvYwRI.png" width="250" alt="Today with extended vitals (light)"><br/>**Today · extended vitals**<br/><sub>Step ring + BP &amp; blood sugar · light</sub> | <img src="https://i.imgur.com/8VYEcDn.png" width="250" alt="Today (dark)"><br/>**Today**<br/><sub>Step ring &amp; live timeline · dark</sub> | <img src="https://i.imgur.com/lGvf48S.png" width="250" alt="Vitals 24h (light)"><br/>**Vitals · 24h**<br/><sub>Heart rate &amp; SpO₂ · light</sub> |
+| <img src="https://i.imgur.com/agEgHZq.png" width="250" alt="Vitals week (light)"><br/>**Vitals · Week**<br/><sub>Weekly HR, SpO₂ &amp; stress · light</sub> | <img src="https://i.imgur.com/7gu4FoV.png" width="250" alt="Vitals on a past day (light)"><br/>**Vitals · any past day**<br/><sub>Calendar date browsing · light</sub> | <img src="https://i.imgur.com/eqSHv1g.png" width="250" alt="Activity today (light)"><br/>**Activity · Today**<br/><sub>Steps, distance &amp; workouts · light</sub> |
+| <img src="https://i.imgur.com/INBIlOn.png" width="250" alt="Choose activity (light)"><br/>**Start a workout**<br/><sub>Choose activity + GPS · light</sub> | <img src="https://i.imgur.com/Q6NECKj.png" width="250" alt="Live workout recording (light)"><br/>**Live recording**<br/><sub>HR zones &amp; live map route · light</sub> | <img src="https://i.imgur.com/cAOfO2x.png" width="250" alt="Sleep night (dark)"><br/>**Sleep · Night**<br/><sub>Score &amp; stage architecture · dark</sub> |
+| <img src="https://i.imgur.com/4cnsH3G.png" width="250" alt="AI Coach (dark)"><br/>**AI Coach**<br/><sub>Conversational health Q&amp;A · dark</sub> | <img src="https://i.imgur.com/ONhiABS.png" width="250" alt="Settings (light)"><br/>**Settings**<br/><sub>Vitals opt-in, coach &amp; P4 mode · light</sub> | <img src="https://i.imgur.com/KoTpiTe.png" width="250" alt="Data export (light)"><br/>**Data export**<br/><sub>OpenTelemetry / OTLP setup · light</sub> |
+
 ## Features
 
 ### Appearance & Themes
 PulseLoop ships with two full visual styles you can switch between at any time from Settings:
-- **Legacy** — the original, high-contrast PulseLoop look (the default).
+- **Original** — the original, high-contrast, purple accents PulseLoop look (the default).
 - **Material 3 Expressive + Material You (P4 mode)** — Android's Material 3 Expressive design with Material You's dynamic, wallpaper-derived color on Android 12+.
 
 Switching styles re-themes the entire app instantly, and the app's home-screen launcher icon automatically swaps to the matching icon.
@@ -101,7 +127,7 @@ Send your health data to your own observability backend as OTLP/HTTP gauge metri
 ### Settings
 - **Profile**: view and edit your name, age, biological sex, height, and weight — used for calorie estimation (Mifflin-St Jeor BMR), personalised coach context, and pushed to the ring to improve its estimates
 - **Goals**: configure daily step, sleep, and active-minutes targets
-- **Appearance**: switch between the Legacy and Material You themes
+- **Appearance**: switch between the Original and Material 3 Expressive with Material You themes
 - **Estimated vitals & calibration** (jring): opt in to blood pressure / blood sugar, and calibrate them against a reference cuff / glucometer reading
 - **Ring management**: view paired ring name, MAC address, battery level, firmware, and connection state; manually sync or forget the ring
 - **AI Coach**: connect or disconnect your OpenAI account and choose the model
