@@ -27,7 +27,7 @@ The headline additions in this release:
 ### Appearance & Themes
 PulseLoop ships with two full visual styles you can switch between at any time from Settings:
 - **Legacy** — the original, high-contrast PulseLoop look (the default).
-- **Material You (P4 mode)** — Android's Material 3 Expressive design with Material You's dynamic, wallpaper-derived color on Android 12+.
+- **Material 3 Expressive + Material You (P4 mode)** — Android's Material 3 Expressive design with Material You's dynamic, wallpaper-derived color on Android 12+.
 
 Switching styles re-themes the entire app instantly, and the app's home-screen launcher icon automatically swaps to the matching icon.
 

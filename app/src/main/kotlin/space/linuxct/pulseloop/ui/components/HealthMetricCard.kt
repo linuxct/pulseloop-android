@@ -27,6 +27,7 @@ fun HealthMetricCard(
     modifier: Modifier = Modifier,
     unit: String? = null,
     trend: List<Double> = emptyList(),
+    showTrend: Boolean = true,
     badge: Pair<String, BadgeVariant>? = null,
     onClick: (() -> Unit)? = null
 ) {
@@ -71,13 +72,15 @@ fun HealthMetricCard(
                     )
                 }
             }
-            MiniSparkline(
-                values = trend,
-                color = color,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(28.dp)
-            )
+            if (showTrend) {
+                MiniSparkline(
+                    values = trend,
+                    color = color,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(28.dp)
+                )
+            }
             if (badge != null) {
                 StatusBadge(label = badge.first, variant = badge.second)
             }

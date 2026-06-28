@@ -139,6 +139,8 @@ internal fun TodayScreenV2(navController: NavController, vm: TodayViewModel) {
                             unit = if (s.calories != null) stringResource(R.string.unit_kcal) else null,
                             color = scheme.primary,
                             trend = s.trends.calories7d.map { it.value },
+                            // No ring calorie data → hide the sparkline rather than show a flat-zero graph.
+                            showTrend = s.calories != null,
                             modifier = Modifier.weight(1f).fillMaxHeight(),
                             onClick = { navigateTo(NavRoute.Activity.route) }
                         )

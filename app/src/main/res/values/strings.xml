@@ -337,7 +337,7 @@
     <string name="settings_section_about">About</string>
     <string name="settings_ring_not_paired">No ring paired</string>
     <string name="settings_material_you_label">P4 mode</string>
-    <string name="settings_material_you_description">Enables Material Design 3 Expressive and a new version 2 UI design. Uses Material You for dynamic colors from your wallpaper</string>
+    <string name="settings_material_you_description">Switches to the new version 2 interface built with Material Design 3 Expressive, using Material You to draw dynamic colors from your wallpaper.</string>
     <string name="settings_oauth_error_default">Authentication failed</string>
     <string name="settings_update_not_found">No updates found</string>
     <string name="settings_update_error">Could not check for updates</string>

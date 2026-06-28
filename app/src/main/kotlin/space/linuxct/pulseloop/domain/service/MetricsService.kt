@@ -273,37 +273,24 @@ object MetricsService {
     }
 
     /**
-     * Returns the best available calorie estimate for [row].
-     * Uses ring-reported calories only when they come from a non-history (live) source.
-     * Otherwise falls back to Mifflin-St Jeor BMR prorated by time elapsed in the day.
+     * Returns the ring-reported calories for [row], or null when the ring has no usable activity
+     * data for the day (no row at all, or a row with neither steps nor calories).
      *
-     * [isToday] controls the time fraction: true = fraction of day elapsed so far,
-     * false = 1.0 (full completed day, used for historical rows).
+     * There is intentionally NO estimate/BMR fallback: if the ring has reported neither calories
+     * nor steps we display nothing rather than inventing a number — a fresh install with no ring
+     * paired must not show a bogus calorie figure (it previously showed a BMR-derived estimate).
+     *
+     * [profile] and [isToday] are kept for call-site compatibility and are no longer used.
      */
     fun computeCalories(row: ActivityDailyEntity?, profile: UserProfileEntity?, isToday: Boolean = true): Double? {
-        // If the ring has an activity row for this day, its value is authoritative — including 0.
-        // BMR fallback only applies when we have no ring data at all.
-        if (row != null) return row.calories
-        // No ring data — fall back to BMR estimate if profile is complete
-        val w = profile?.weightKg ?: return null
-        val h = profile.heightCm?.toDouble() ?: return null
-        val a = profile.age?.toDouble() ?: return null
-        val bmr = when (profile.biologicalSex?.lowercase()) {
-            "female" -> 10.0 * w + 6.25 * h - 5.0 * a - 161.0
-            else     -> 10.0 * w + 6.25 * h - 5.0 * a + 5.0
-        }
-        val fractionOfDay = if (isToday) {
-            val cal = Calendar.getInstance()
-            (cal.get(Calendar.HOUR_OF_DAY) * 60 + cal.get(Calendar.MINUTE)) / 1440.0
-        } else {
-            1.0
-        }
-        return bmr * fractionOfDay
+        row ?: return null
+        // Only show calories when the ring actually reported activity (steps or calories).
+        return if (row.steps > 0 || row.calories > 0.0) row.calories else null
     }
 
-    /** Returns "ring" if the row uses ring-reported calories, "bmr_estimate" otherwise. */
+    /** Returns "ring" when [row] carries ring-reported activity, "none" when there is no data. */
     fun caloriesSource(row: ActivityDailyEntity?): String =
-        if (row != null) "ring" else "bmr_estimate"
+        if (row != null && (row.steps > 0 || row.calories > 0.0)) "ring" else "none"
 
     private fun todayMidnightMs(): Long {
         val cal = Calendar.getInstance()
