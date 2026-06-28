@@ -8,6 +8,7 @@ import space.linuxct.pulseloop.data.db.dao.CoachDao
 import space.linuxct.pulseloop.data.db.dao.DebugDao
 import space.linuxct.pulseloop.data.db.dao.DeviceDao
 import space.linuxct.pulseloop.data.db.dao.MeasurementDao
+import space.linuxct.pulseloop.data.db.dao.OtlpExportStateDao
 import space.linuxct.pulseloop.data.db.dao.ProfileDao
 import space.linuxct.pulseloop.data.db.dao.SleepDao
 import space.linuxct.pulseloop.data.db.entities.ActivityDailyEntity
@@ -25,6 +26,7 @@ import space.linuxct.pulseloop.data.db.entities.CoachToolCallEntity
 import space.linuxct.pulseloop.data.db.entities.DerivedUpdateRowEntity
 import space.linuxct.pulseloop.data.db.entities.DeviceEntity
 import space.linuxct.pulseloop.data.db.entities.MeasurementEntity
+import space.linuxct.pulseloop.data.db.entities.OtlpExportStateEntity
 import space.linuxct.pulseloop.data.db.entities.RawPacketRowEntity
 import space.linuxct.pulseloop.data.db.entities.SleepSessionEntity
 import space.linuxct.pulseloop.data.db.entities.SleepStageBlockEntity
@@ -55,8 +57,9 @@ import space.linuxct.pulseloop.data.db.entities.WearableLogEntity
         CoachNotificationRecordEntity::class,
         CoachSummaryEntity::class,
         WearableLogEntity::class,
+        OtlpExportStateEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 abstract class PulseDatabase : RoomDatabase() {
@@ -68,4 +71,5 @@ abstract class PulseDatabase : RoomDatabase() {
     abstract fun activitySessionDao(): ActivitySessionDao
     abstract fun coachDao(): CoachDao
     abstract fun debugDao(): DebugDao
+    abstract fun otlpExportStateDao(): OtlpExportStateDao
 }

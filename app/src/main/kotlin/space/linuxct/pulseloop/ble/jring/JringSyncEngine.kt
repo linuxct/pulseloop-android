@@ -40,8 +40,28 @@ class JringSyncEngine(private val writer: RingCommandWriter) : RingSyncEngine {
         writer.enqueue(encoder.makeSpO2StopCommand())
     }
 
+    override fun startCombinedMeasurement() {
+        writer.enqueue(encoder.makeCombinedMeasurementStartCommand())
+    }
+
+    override fun stopCombinedMeasurement() {
+        writer.enqueue(encoder.makeCombinedMeasurementStopCommand())
+    }
+
+    override fun setUserInfo(ageYears: Int, isMale: Boolean, heightCm: Int, weightKg: Int) {
+        writer.enqueue(encoder.makeUserInfoCommand(ageYears, isMale, heightCm, weightKg))
+    }
+
+    override fun setBloodPressureAdjust(systolic: Int, diastolic: Int) {
+        writer.enqueue(encoder.makeBPAdjustCommand(systolic, diastolic))
+    }
+
     override fun findDevice() {
         writer.enqueue(encoder.makeFindRingCommand())
+    }
+
+    override fun stopFindDevice() {
+        writer.enqueue(encoder.makeStopFindRingCommand())
     }
 
     override fun setGoal(steps: Int) {

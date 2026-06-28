@@ -32,11 +32,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import space.linuxct.pulseloop.R
 import space.linuxct.pulseloop.ui.charts.HrLineChart
 import space.linuxct.pulseloop.ui.components.PulseCard
 import space.linuxct.pulseloop.ui.components.RouteMapCard
@@ -75,8 +77,8 @@ fun ActivityDetailScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Text("Workout not found", fontWeight = FontWeight.SemiBold, fontSize = 18.sp, color = colors.textPrimary)
-                Text("This session is no longer in local storage.", fontSize = 14.sp, color = colors.textMuted)
+                Text(stringResource(R.string.activity_detail_not_found_title), fontWeight = FontWeight.SemiBold, fontSize = 18.sp, color = colors.textPrimary)
+                Text(stringResource(R.string.activity_detail_not_found_message), fontSize = 14.sp, color = colors.textMuted)
             }
             return@Box
         }
@@ -86,7 +88,7 @@ fun ActivityDetailScreen(
                 title = { Text(activityLabel(session.activityType), color = colors.textPrimary) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = colors.textPrimary)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back), tint = colors.textPrimary)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = colors.background)
@@ -127,8 +129,8 @@ fun ActivityDetailScreen(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        StatCard("Distance", if (session.totalDistanceMeters > 0) "%.2f km".format(session.totalDistanceMeters / 1000) else "—", Modifier.weight(1f))
-                        StatCard("Calories", if (session.totalCalories > 0) "%,d kcal".format(session.totalCalories.toInt()) else "—", Modifier.weight(1f))
+                        StatCard(stringResource(R.string.label_distance), if (session.totalDistanceMeters > 0) "%.2f km".format(session.totalDistanceMeters / 1000) else "—", Modifier.weight(1f))
+                        StatCard(stringResource(R.string.label_calories), if (session.totalCalories > 0) "%,d kcal".format(session.totalCalories.toInt()) else "—", Modifier.weight(1f))
                     }
                 }
 
@@ -148,7 +150,7 @@ fun ActivityDetailScreen(
                     item {
                         PulseCard(modifier = Modifier.fillMaxWidth()) {
                             Column(modifier = Modifier.fillMaxWidth()) {
-                                Text("HEART RATE", fontSize = 11.sp, fontWeight = FontWeight.Medium, color = colors.textMuted, letterSpacing = 1.sp)
+                                Text(stringResource(R.string.label_heart_rate).uppercase(), fontSize = 11.sp, fontWeight = FontWeight.Medium, color = colors.textMuted, letterSpacing = 1.sp)
                                 Spacer(modifier = Modifier.height(12.dp))
                                 Box(modifier = Modifier.fillMaxWidth().height(120.dp)) {
                                     HrLineChart(samples = state.hrSamples)
@@ -166,8 +168,8 @@ fun ActivityDetailScreen(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 modifier = Modifier.fillMaxWidth().padding(vertical = 20.dp)
                             ) {
-                                Text("No GPS route recorded", fontWeight = FontWeight.Medium, fontSize = 14.sp, color = colors.textPrimary)
-                                Text("GPS points were not captured for this session.", fontSize = 12.sp, color = colors.textMuted)
+                                Text(stringResource(R.string.activity_detail_no_gps_title), fontWeight = FontWeight.Medium, fontSize = 14.sp, color = colors.textPrimary)
+                                Text(stringResource(R.string.activity_detail_no_gps_message), fontSize = 12.sp, color = colors.textMuted)
                             }
                         }
                     }
@@ -176,7 +178,7 @@ fun ActivityDetailScreen(
                 // Delete button
                 item {
                     SecondaryButton(
-                        title = "Delete Workout",
+                        title = stringResource(R.string.action_delete_workout),
                         onClick = { showDeleteDialog = true },
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -189,16 +191,16 @@ fun ActivityDetailScreen(
         if (showDeleteDialog) {
             AlertDialog(
                 onDismissRequest = { showDeleteDialog = false },
-                title = { Text("Delete this workout?") },
-                text = { Text("This permanently removes the workout and its data. This can't be undone.") },
+                title = { Text(stringResource(R.string.dialog_delete_workout_title)) },
+                text = { Text(stringResource(R.string.dialog_delete_workout_message)) },
                 confirmButton = {
                     TextButton(onClick = {
                         showDeleteDialog = false
                         vm.deleteSession { navController.popBackStack() }
-                    }) { Text("Delete", color = colors.danger) }
+                    }) { Text(stringResource(R.string.action_delete), color = colors.danger) }
                 },
                 dismissButton = {
-                    TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") }
+                    TextButton(onClick = { showDeleteDialog = false }) { Text(stringResource(R.string.action_cancel)) }
                 },
                 containerColor = colors.card
             )

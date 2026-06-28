@@ -20,7 +20,7 @@ sealed class RingDecodedEvent {
     data class HistorySyncProgress(val stage: String) : RingDecodedEvent()
     object HistorySyncFinished : RingDecodedEvent()
     data class Battery(val percent: Int) : RingDecodedEvent()
-    data class Status(val address: String?) : RingDecodedEvent()
+    data class Status(val address: String?, val firmware: String? = null) : RingDecodedEvent()
     data class TimeSyncAck(val timestamp: Long) : RingDecodedEvent()
     data class CommandAck(val commandId: Byte) : RingDecodedEvent()
     data class Unknown(val commandId: Byte, val raw: ByteArray) : RingDecodedEvent()

@@ -106,7 +106,27 @@ class RingBLEClient @Inject constructor(
     fun stopHR()     { _hrActive.set(false); activeSyncEngine?.stopHeartRate() }
     fun measureSpO2() { _spO2Active.set(true);  activeSyncEngine?.startSpO2() }
     fun stopSpO2()   { _spO2Active.set(false); activeSyncEngine?.stopSpO2() }
-    fun findDevice() = activeSyncEngine?.findDevice()
+    // Combined spot measurement (HR + BP + SpO2 + fatigue + stress + blood sugar). Reuses the SpO2
+    // active flag since the 0x23 command is the same one that drives the SpO2 result.
+    fun measureCombined() { _spO2Active.set(true); activeSyncEngine?.startCombinedMeasurement() }
+    fun stopCombined()    { _spO2Active.set(false); activeSyncEngine?.stopCombinedMeasurement() }
+    fun setUserInfo(ageYears: Int, isMale: Boolean, heightCm: Int, weightKg: Int) =
+        activeSyncEngine?.setUserInfo(ageYears, isMale, heightCm, weightKg)
+    fun setBloodPressureAdjust(systolic: Int, diastolic: Int) =
+        activeSyncEngine?.setBloodPressureAdjust(systolic, diastolic)
+    fun findDevice()     = activeSyncEngine?.findDevice()
+    fun stopFindDevice() = activeSyncEngine?.stopFindDevice()
+
+    fun refreshBattery() {
+        Handler(Looper.getMainLooper()).post {
+            gatt?.readCharacteristic(batteryChar ?: return@post)
+        }
+    }
+
+    fun reconnect() {
+        val address = targetAddress ?: return
+        connectToAddress(address, autoConnect = false)
+    }
     fun setGoal(steps: Int) = activeSyncEngine?.setGoal(steps)
 
     // --- Write serialization ---
@@ -384,6 +404,7 @@ class RingBLEClient @Inject constructor(
             val driver = activeDriver ?: return
             val events = driver.ingest(value, characteristic.uuid)
             for (decoded in events) {
+                if (decoded is RingDecodedEvent.Battery) _batteryPercent.value = decoded.percent
                 PulseEventBus.publish(PulseEvent.RawPacket(PacketDirection.INCOMING, value, decoded))
                 for (pulse in RingEventBridge.map(decoded)) {
                     PulseEventBus.publish(pulse)

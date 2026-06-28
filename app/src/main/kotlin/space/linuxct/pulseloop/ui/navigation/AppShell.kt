@@ -20,6 +20,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -38,6 +41,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -50,6 +54,7 @@ import space.linuxct.pulseloop.ui.screens.activity.ActivityDetailScreen
 import space.linuxct.pulseloop.ui.screens.activity.ActivityScreen
 import space.linuxct.pulseloop.ui.screens.coach.CoachScreen
 import space.linuxct.pulseloop.ui.screens.debug.DebugScreen
+import space.linuxct.pulseloop.ui.screens.export.DataExportScreen
 import space.linuxct.pulseloop.ui.screens.onboarding.OnboardingFlowScreen
 import space.linuxct.pulseloop.ui.screens.pairing.PairingScreen
 import space.linuxct.pulseloop.ui.screens.record.RecordLiveScreen
@@ -61,6 +66,8 @@ import space.linuxct.pulseloop.ui.screens.sleep.SleepScreen
 import space.linuxct.pulseloop.ui.screens.today.TodayScreen
 import space.linuxct.pulseloop.ui.screens.vitals.VitalsScreen
 import space.linuxct.pulseloop.ui.theme.LocalPulseColors
+import space.linuxct.pulseloop.ui.theme.LocalUiMode
+import space.linuxct.pulseloop.ui.theme.UiMode
 import space.linuxct.pulseloop.ui.viewmodel.ShellViewModel
 
 val LocalBottomNavHeight = compositionLocalOf { 0.dp }
@@ -107,6 +114,7 @@ fun AppShell(vm: ShellViewModel = hiltViewModel()) {
 @Composable
 private fun MainTabShell(navController: NavHostController) {
     val colors   = LocalPulseColors.current
+    val uiMode   = LocalUiMode.current
     val density  = LocalDensity.current
     val backEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backEntry?.destination?.route
@@ -119,15 +127,20 @@ private fun MainTabShell(navController: NavHostController) {
 
     var bottomNavHeightDp by remember { mutableStateOf(0.dp) }
 
+    val shellBg = if (uiMode == UiMode.MATERIAL_YOU) MaterialTheme.colorScheme.background
+                  else colors.background
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.background)
+            .background(shellBg)
     ) {
-        AppHeaderBar(
-            onSettingsTap = { navController.navigate(NavRoute.Settings.route) },
-            onDebugTap    = { navController.navigate(NavRoute.Debug.route) }
-        )
+        if (uiMode != UiMode.MATERIAL_YOU) {
+            AppHeaderBar(
+                onSettingsTap = { navController.navigate(NavRoute.Settings.route) },
+                onDebugTap    = { navController.navigate(NavRoute.Debug.route) }
+            )
+        }
 
         Box(modifier = Modifier.weight(1f)) {
             CompositionLocalProvider(LocalBottomNavHeight provides bottomNavHeightDp) {
@@ -149,6 +162,7 @@ private fun MainTabShell(navController: NavHostController) {
 
                 // Pushed
                 composable(NavRoute.Settings.route) { SettingsScreen(navController) }
+                composable(NavRoute.DataExport.route) { DataExportScreen(navController) }
                 composable(NavRoute.Pairing.route)  { PairingScreen(onDone = { navController.popBackStack() }) }
                 composable(NavRoute.Debug.route)    { DebugScreen() }
                 composable(NavRoute.RecordSelect.route) {
@@ -180,22 +194,60 @@ private fun MainTabShell(navController: NavHostController) {
             } // CompositionLocalProvider
 
             if (showBottomBar) {
-                BottomNavBar(
-                    selected  = selectedTab,
-                    onSelect  = { tab ->
-                        navController.navigate(tab.route) {
-                            popUpTo(NavRoute.Today.route) { saveState = true }
-                            launchSingleTop = true
-                            restoreState    = true
-                        }
-                    },
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .onSizeChanged { size ->
-                            bottomNavHeightDp = with(density) { size.height.toDp() }
-                        }
-                )
+                val onTabSelect: (MainTab) -> Unit = { tab ->
+                    navController.navigate(tab.route) {
+                        popUpTo(NavRoute.Today.route) { saveState = true }
+                        launchSingleTop = true
+                        restoreState    = true
+                    }
+                }
+                if (uiMode == UiMode.MATERIAL_YOU) {
+                    MyNavigationBar(
+                        selected = selectedTab,
+                        onSelect = onTabSelect,
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .onSizeChanged { size ->
+                                bottomNavHeightDp = with(density) { size.height.toDp() }
+                            }
+                    )
+                } else {
+                    BottomNavBar(
+                        selected  = selectedTab,
+                        onSelect  = onTabSelect,
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .onSizeChanged { size ->
+                                bottomNavHeightDp = with(density) { size.height.toDp() }
+                            }
+                    )
+                }
             }
+        }
+    }
+}
+
+@Composable
+private fun MyNavigationBar(
+    selected: MainTab,
+    onSelect: (MainTab) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    NavigationBar(
+        modifier = modifier.fillMaxWidth(),
+        containerColor = MaterialTheme.colorScheme.surfaceContainer
+    ) {
+        MainTab.entries.forEach { tab ->
+            NavigationBarItem(
+                icon = {
+                    Icon(imageVector = tab.icon, contentDescription = stringResource(tab.labelRes))
+                },
+                label = {
+                    Text(text = stringResource(tab.labelRes), fontSize = 10.sp, fontWeight = FontWeight.Medium)
+                },
+                selected = tab == selected,
+                onClick = { onSelect(tab) }
+            )
         }
     }
 }
@@ -240,12 +292,12 @@ private fun BottomNavBar(
                     ) {
                         Icon(
                             imageVector = tab.icon,
-                            contentDescription = tab.label,
-                            tint = if (isSelected) colors.textPrimary else colors.textMuted
+                            contentDescription = stringResource(tab.labelRes),
+                            tint = if (isSelected) colors.onAccentSoft else colors.textMuted
                         )
                     }
                     Text(
-                        text = tab.label,
+                        text = stringResource(tab.labelRes),
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Medium,
                         color = if (isSelected) colors.textPrimary else colors.textMuted

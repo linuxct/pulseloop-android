@@ -20,7 +20,7 @@ class JringDriver : WearableDriver {
     override fun frame(command: ByteArray): ByteArray = command
 
     override fun ingest(data: ByteArray, fromCharacteristic: UUID): List<RingDecodedEvent> =
-        listOf(decoder.decode(data))
+        decoder.decode(data)
 
     override fun makeSyncEngine(writer: RingCommandWriter): RingSyncEngine =
         JringSyncEngine(writer)

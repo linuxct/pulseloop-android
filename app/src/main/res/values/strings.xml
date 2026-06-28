@@ -1,14 +1,507 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">PulseLoop</string>
+
+    <!-- ── Notifications ──────────────────────────────────────────────────── -->
     <string name="notification_channel_coach">Coach Insights</string>
     <string name="notification_channel_workout">Workout</string>
     <string name="notification_channel_ring">Ring Connection</string>
     <string name="notification_channel_updates">App Updates</string>
+    <string name="notification_channel_health_alerts">Health Alerts</string>
+    <string name="notification_ring_not_worn_title">Ring may not be worn or may be worn incorrectly</string>
+    <string name="notification_ring_not_worn_content">Wear it to continue measuring your HR. Make sure the sensors face the innermost side of your finger towards the hand</string>
     <string name="notification_coach_morning_title">Good morning, here\'s your health update</string>
     <string name="notification_coach_evening_title">Evening health summary ready</string>
     <string name="workout_notification_title">Workout in progress</string>
     <string name="workout_notification_action_pause">Pause</string>
     <string name="workout_notification_action_resume">Resume</string>
     <string name="workout_notification_action_finish">Finish</string>
+
+    <!-- ── Common actions ─────────────────────────────────────────────────── -->
+    <string name="action_save">Save</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_ok">OK</string>
+    <string name="action_continue">Continue</string>
+    <string name="action_done">Done</string>
+    <string name="action_start">Start</string>
+    <string name="action_finish">Finish</string>
+    <string name="action_discard">Discard</string>
+    <string name="action_pause">Pause</string>
+    <string name="action_resume">Resume</string>
+    <string name="action_skip_for_now">Skip for now</string>
+    <string name="action_open_settings">Open Settings</string>
+    <string name="action_pair_now">Pair now</string>
+    <string name="action_keep_recording">Keep recording</string>
+    <string name="action_edit_profile">Edit profile</string>
+    <string name="action_edit_goals">Edit goals</string>
+    <string name="action_pair_a_ring">Pair a ring</string>
+    <string name="action_sync_now">Sync now</string>
+    <string name="action_find_ring">Find ring</string>
+    <string name="action_stop_finding">Stop finding</string>
+    <string name="action_disconnect">Disconnect</string>
+    <string name="action_connect">Connect</string>
+    <string name="action_forget_ring">Forget ring</string>
+    <string name="action_forget">Forget</string>
+    <string name="action_login_with_openai">Login with OpenAI</string>
+    <string name="action_re_login">Re-login</string>
+    <string name="action_logout">Logout</string>
+    <string name="action_check_for_updates">Check for updates</string>
+    <string name="action_checking_for_updates">Checking for updates…</string>
+    <string name="action_stop_measurement">Stop measurement</string>
+    <string name="action_measure_hr">Measure HR</string>
+    <string name="action_measure_spo2">Measure SpO₂</string>
+    <string name="action_scan_for_rings">Scan for rings</string>
+    <string name="action_stop_scanning">Stop scanning</string>
+    <string name="action_delete_workout">Delete Workout</string>
+    <string name="action_record">Record</string>
+    <string name="action_debug_menu">Debug menu</string>
+    <string name="action_data_export">Data export (OpenTelemetry)</string>
+
+    <!-- ── Common values / placeholders ──────────────────────────────────── -->
+    <string name="value_not_set">Not set</string>
+    <string name="value_not_connected">Not connected</string>
+    <string name="value_connected">Connected</string>
+
+    <!-- ── Common labels (shared across V1 and V2) ───────────────────────── -->
+    <string name="label_today">Today</string>
+    <string name="label_steps">Steps</string>
+    <string name="label_heart_rate">Heart Rate</string>
+    <string name="label_spo2">SpO₂</string>
+    <string name="label_sleep">Sleep</string>
+    <string name="label_calories">Calories</string>
+    <string name="label_distance">Distance</string>
+    <string name="label_active_minutes">Active minutes</string>
+    <string name="label_active_minutes_short">Active Min</string>
+    <string name="label_duration">Duration</string>
+    <string name="label_pace">Pace</string>
+    <string name="label_name">Name</string>
+    <string name="label_age">Age</string>
+    <string name="label_sex">Sex</string>
+    <string name="label_height">Height</string>
+    <string name="label_weight">Weight</string>
+    <string name="label_daily_steps">Daily steps</string>
+    <string name="label_version">Version</string>
+    <string name="label_openai">OpenAI</string>
+    <string name="label_model">Model</string>
+    <string name="label_device">Device</string>
+    <string name="label_battery">Battery</string>
+    <string name="label_status">Status</string>
+    <string name="label_firmware">Firmware</string>
+
+    <!-- ── Common units ───────────────────────────────────────────────────── -->
+    <string name="unit_bpm">bpm</string>
+    <string name="unit_percent">%</string>
+    <string name="unit_kcal">kcal</string>
+    <string name="unit_km">km</string>
+    <string name="unit_min">min</string>
+
+    <!-- ── Content descriptions ───────────────────────────────────────────── -->
+    <string name="cd_back">Back</string>
+    <string name="cd_settings">Settings</string>
+    <string name="cd_send">Send</string>
+    <string name="cd_new_conversation">New conversation</string>
+    <string name="cd_clear_chat_history">Clear chat history</string>
+    <string name="cd_record_activity">Record Activity</string>
+    <string name="cd_edit_model">Edit model</string>
+    <string name="cd_debug_export">Full debug dump (ZIP)</string>
+    <string name="cd_debug_clear">Clear all debug data</string>
+
+    <!-- ── Greetings ──────────────────────────────────────────────────────── -->
+    <string name="greeting_morning">Good morning</string>
+    <string name="greeting_afternoon">Good afternoon</string>
+    <string name="greeting_evening">Good evening</string>
+    <string name="greeting_night">Good night</string>
+
+    <!-- ── Navigation tabs ────────────────────────────────────────────────── -->
+    <string name="tab_today">Today</string>
+    <string name="tab_vitals">Vitals</string>
+    <string name="tab_activity">Activity</string>
+    <string name="tab_sleep">Sleep</string>
+    <string name="tab_coach">Coach</string>
+
+    <!-- ── Screen titles ──────────────────────────────────────────────────── -->
+    <string name="screen_title_today">Today</string>
+    <string name="screen_title_vitals">Vitals</string>
+    <string name="screen_title_activity">Activity</string>
+    <string name="screen_title_sleep">Sleep</string>
+    <string name="sleep_screen_subtitle">Your nightly rest and recovery</string>
+    <string name="sleep_screen_subtitle_v2">Rest and recovery</string>
+    <string name="screen_title_coach">Coach</string>
+    <string name="screen_title_settings">Settings</string>
+
+    <!-- ── Status / connection states ────────────────────────────────────── -->
+    <string name="status_connected_battery">Connected · %1$d%%</string>
+    <string name="status_connected">Connected</string>
+    <string name="status_connecting">Connecting…</string>
+    <string name="status_searching">Searching…</string>
+    <string name="status_sync_failed">Sync failed</string>
+    <string name="status_disconnected">Disconnected</string>
+
+    <!-- ── Charts — empty states ─────────────────────────────────────────── -->
+    <string name="chart_empty_no_data">No data</string>
+    <string name="chart_empty_no_sleep_data">No sleep data</string>
+
+    <!-- ── Charts — range selectors ─────────────────────────────────────── -->
+    <string name="range_label_24h">24h</string>
+    <string name="range_label_7d">7d</string>
+    <string name="range_label_30d">30d</string>
+    <string name="range_label_12mo">12mo</string>
+
+    <!-- ── Today screen ───────────────────────────────────────────────────── -->
+    <string name="today_screen_subtitle">Here\'s your health summary</string>
+    <string name="today_timeline_header">Today so far</string>
+    <string name="today_timeline_empty_title">No events yet</string>
+    <string name="today_timeline_empty_message">Sync your ring to see activity here.</string>
+    <string name="app_name_header">PULSELOOP</string>
+    <!-- Calibration / hero states -->
+    <string name="calibration_banner_title">Learning your baseline</string>
+    <string name="calibration_banner_message">Day %1$d of %2$d — wear your ring through the day</string>
+    <string name="today_hero_waiting_title">Waiting for first sync</string>
+    <string name="today_hero_waiting_message">Sync your ring to start collecting movement, heart rate, blood oxygen, and recovery context.</string>
+    <string name="today_hero_building_momentum">Building momentum</string>
+    <string name="today_hero_take_it_easy">Take it easy</string>
+    <string name="today_hero_steady_build">Steady build</string>
+    <string name="hero_chip_hr_pending">HR pending</string>
+    <string name="hero_chip_hr_collected">HR collected</string>
+    <string name="hero_chip_sleep_synced">Sleep synced</string>
+    <string name="hero_chip_sleep_pending">Sleep pending</string>
+    <string name="hero_chip_baseline_pending">Baseline pending</string>
+    <string name="hero_chip_steps_collected">Steps collected</string>
+    <!-- Badges -->
+    <string name="badge_hr_in_range">In range</string>
+    <string name="badge_hr_below_range">Below range</string>
+    <string name="badge_hr_above_range">Above range</string>
+    <string name="badge_spo2_normal">Normal</string>
+    <string name="badge_spo2_low">Low</string>
+    <string name="badge_spo2_very_low">Very low</string>
+    <string name="badge_goal_met">Goal met</string>
+    <string name="badge_almost_there">Almost there</string>
+    <string name="badge_short_night">Short night</string>
+    <string name="badge_in_progress">In progress</string>
+    <string name="badge_keep_going">Keep going</string>
+
+    <!-- ── StepRingGauge ──────────────────────────────────────────────────── -->
+    <string name="step_ring_of_steps_label">of %1$s steps</string>
+
+    <!-- ── Vitals screen ──────────────────────────────────────────────────── -->
+    <string name="vitals_screen_subtitle">Live measurements and trends</string>
+    <string name="vitals_card_heart_rate">Heart rate</string>
+    <string name="vitals_card_blood_oxygen">Blood oxygen</string>
+    <string name="vitals_card_stress">Stress</string>
+    <string name="vitals_card_hrv">HRV</string>
+    <string name="vitals_card_skin_temperature">Skin temperature</string>
+    <string name="vitals_hr_unit_label">bpm range</string>
+    <string name="vitals_spo2_unit_label" formatted="false">% avg</string>
+    <string name="vitals_measuring_hint">Measuring… keep the ring still</string>
+    <string name="vitals_hr_resting_label">Resting estimate: %1$s</string>
+    <string name="vitals_hr_calibrating">Calibrating</string>
+    <string name="vitals_hr_peak_label">Peak today: %1$s</string>
+    <string name="vitals_hr_not_enough_data">Not enough data</string>
+    <string name="vitals_hr_first_reading_title">First reading recorded</string>
+    <string name="vitals_hr_first_reading_message">Sync again later to build your trend.</string>
+    <string name="vitals_hr_no_samples_title">No HR samples yet</string>
+    <string name="vitals_hr_no_samples_message">Wear the ring and sync to start your trend.</string>
+    <string name="vitals_hr_no_samples_title_past">No HR data on this date</string>
+    <string name="vitals_spo2_first_reading_title">First reading recorded</string>
+    <string name="vitals_spo2_first_reading_message">Measure again later to build your trend.</string>
+    <string name="vitals_spo2_no_samples_title">No SpO₂ samples yet</string>
+    <string name="vitals_spo2_no_samples_message">Tap Measure to take a reading.</string>
+    <string name="vitals_spo2_no_samples_title_past">No SpO₂ data on this date</string>
+    <string name="vitals_stress_no_data_title">No stress data yet</string>
+    <string name="vitals_stress_no_data_message">Wear the ring through the day and sync.</string>
+    <string name="vitals_stress_no_data_title_past">No stress data on this date</string>
+    <string name="vitals_hrv_no_data_title">No HRV data yet</string>
+    <string name="vitals_hrv_no_data_message">HRV builds up over a few hours of wear.</string>
+    <string name="vitals_hrv_no_data_title_past">No HRV data on this date</string>
+    <string name="vitals_temp_no_data_title">No temperature data yet</string>
+    <string name="vitals_temp_no_data_message">Temperature trends appear after overnight wear.</string>
+    <string name="vitals_temp_no_data_title_past">No temperature data on this date</string>
+    <string name="vitals_no_data_past_message">No readings were captured on this day.</string>
+    <string name="vitals_ring_not_connected">Ring not connected</string>
+    <!-- V2-specific wording -->
+    <string name="vitals_hr_resting_label_v2">Resting: %1$s</string>
+    <string name="vitals_hr_peak_label_v2">Peak: %1$s</string>
+    <!-- Vitals history range selector -->
+    <string name="vitals_range_day">24h</string>
+    <string name="vitals_range_week">Week</string>
+    <string name="vitals_range_month">Month</string>
+    <string name="vitals_range_year">Year</string>
+    <!-- Vitals history stats row -->
+    <string name="vitals_history_avg_label">Avg %1$s</string>
+    <string name="vitals_history_min_label">Min %1$s</string>
+    <string name="vitals_history_max_label">Max %1$s</string>
+    <string name="vitals_history_no_data">No data for this period</string>
+    <!-- Combined-measurement vitals (Jring): blood pressure, blood sugar, fatigue -->
+    <string name="vitals_card_blood_pressure">Blood pressure</string>
+    <string name="vitals_card_blood_sugar">Blood sugar</string>
+    <string name="vitals_card_fatigue">Fatigue</string>
+    <string name="vitals_measure_action">Measure</string>
+    <string name="vitals_bp_systolic_legend">Systolic</string>
+    <string name="vitals_bp_diastolic_legend">Diastolic</string>
+    <string name="vitals_bp_no_data_title">No blood pressure yet</string>
+    <string name="vitals_bp_no_data_message">Tap Measure and keep the ring still for a reading.</string>
+    <string name="vitals_bp_no_data_title_past">No blood pressure on this date</string>
+    <string name="vitals_glucose_no_data_title">No blood sugar yet</string>
+    <string name="vitals_glucose_no_data_message">Tap Measure and keep the ring still for a reading.</string>
+    <string name="vitals_glucose_no_data_title_past">No blood sugar on this date</string>
+    <string name="vitals_fatigue_no_data_title">No fatigue data yet</string>
+    <string name="vitals_fatigue_no_data_message">Tap Measure and keep the ring still for a reading.</string>
+    <string name="vitals_fatigue_no_data_title_past">No fatigue data on this date</string>
+    <!-- Units / shared metric labels -->
+    <string name="unit_mmhg">mmHg</string>
+    <string name="unit_mgdl">mg/dL</string>
+    <string name="label_blood_pressure">Blood pressure</string>
+    <string name="label_blood_sugar">Blood sugar</string>
+    <string name="label_fatigue">Fatigue</string>
+    <!-- Stress/fatigue 0–100 qualitative bands -->
+    <string name="band_excellent">Excellent</string>
+    <string name="band_good">Good</string>
+    <string name="band_normal">Normal</string>
+    <string name="band_poor">Poor</string>
+    <string name="band_very_poor">Very poor</string>
+    <!-- Clinical zone labels for blood pressure / blood sugar -->
+    <string name="zone_in_range">In range</string>
+    <string name="zone_elevated">Elevated</string>
+    <string name="zone_high">High</string>
+    <string name="zone_low">Low</string>
+    <!-- Stress / fatigue explainers (the metrics are otherwise opaque) -->
+    <string name="vitals_stress_explainer">Estimated physiological strain from heart-rate variability — lower means calmer, higher means more strain (0–100).</string>
+    <string name="vitals_fatigue_explainer">Estimated tiredness from heart-rate and activity patterns — lower means more rested, higher means more fatigued (0–100).</string>
+    <!-- 0–100 score suffix for stress / fatigue -->
+    <string name="vitals_score_out_of_100">/ 100</string>
+
+    <!-- ── Activity screen ────────────────────────────────────────────────── -->
+    <string name="activity_screen_subtitle">Record workouts and track movement from your ring</string>
+    <string name="activity_screen_subtitle_v2">Movement and workouts</string>
+    <string name="activity_steps_chart_title">Steps — Last 7 days</string>
+    <string name="activity_recent_workouts_header">Recent Workouts</string>
+    <string name="activity_no_workouts_title">No workouts recorded yet</string>
+    <string name="activity_no_workouts_message">Start one manually when your ring misses an activity.</string>
+    <string name="activity_no_workouts_message_v2">Tap + to start recording.</string>
+    <string name="activity_no_workouts_title_past">No workouts on this date</string>
+    <string name="activity_no_workouts_message_past">No workout sessions were recorded on this day.</string>
+    <!-- Activity history range selector -->
+    <string name="activity_range_day">Today</string>
+    <string name="activity_range_week">Week</string>
+    <string name="activity_range_month">Month</string>
+    <string name="activity_range_year">Year</string>
+    <!-- ActivityDetail -->
+    <string name="activity_detail_not_found_title">Workout not found</string>
+    <string name="activity_detail_not_found_message">This session is no longer in local storage.</string>
+    <string name="activity_detail_no_gps_title">No GPS route recorded</string>
+    <string name="activity_detail_no_gps_message">GPS points were not captured for this session.</string>
+
+    <!-- ── Sleep screen ───────────────────────────────────────────────────── -->
+    <string name="sleep_range_night">Night</string>
+    <string name="sleep_range_week">Week</string>
+    <string name="sleep_range_month">Month</string>
+    <string name="sleep_range_year">Year</string>
+    <string name="sleep_stages_header">Stages</string>
+    <string name="sleep_stages_subtitle">Sleep architecture</string>
+    <string name="sleep_stage_deep">Deep</string>
+    <string name="sleep_stage_light">Light</string>
+    <string name="sleep_stage_awake">Awake</string>
+    <string name="sleep_no_stage_data">No stage data</string>
+    <string name="sleep_no_sleep_title">No sleep recorded last night</string>
+    <string name="sleep_no_sleep_title_v2">No sleep recorded</string>
+    <string name="sleep_no_sleep_message">Wear your ring overnight to see your sleep here.</string>
+    <string name="sleep_no_sleep_title_past">No sleep on this date</string>
+    <string name="sleep_no_sleep_message_past">No sleep session was captured for this date.</string>
+    <string name="sleep_duration_chart_title">Duration</string>
+
+    <!-- ── Coach screen ───────────────────────────────────────────────────── -->
+    <string name="coach_no_key_title">AI Coach</string>
+    <string name="coach_no_key_message">Log in with OpenAI in Settings → AI Coach to start chatting with your personal health coach.</string>
+    <string name="coach_input_placeholder">Ask your coach…</string>
+    <string name="coach_loading_thinking">Thinking…</string>
+    <string name="coach_streaming_composing">Composing…</string>
+    <string name="coach_streaming_generating">Generating response…</string>
+    <string name="coach_confidence_high">High confidence</string>
+    <string name="coach_confidence_medium">Medium confidence</string>
+    <string name="coach_confidence_low">Low confidence</string>
+    <string name="coach_confidence_insufficient_data">Insufficient data</string>
+    <string name="coach_welcome_subtitle">Ask me anything about your health data</string>
+    <string name="coach_suggestion_hr_trend">How\'s my heart rate trending this week?</string>
+    <string name="coach_suggestion_sleep_last_night">How did I sleep last night?</string>
+    <string name="coach_suggestion_step_goal">Am I hitting my step goal?</string>
+    <string name="coach_suggestion_spo2_avg">What\'s my SpO₂ average?</string>
+    <string name="coach_error_no_api_key">Log in with OpenAI in Settings → AI Coach</string>
+
+    <!-- ── Settings screen ────────────────────────────────────────────────── -->
+    <string name="settings_section_profile">Profile</string>
+    <string name="settings_section_ring">Ring</string>
+    <string name="settings_section_goals">Goals</string>
+    <string name="settings_section_ai_coach">AI Coach</string>
+    <string name="settings_section_appearance">Appearance</string>
+    <string name="settings_section_about">About</string>
+    <string name="settings_ring_not_paired">No ring paired</string>
+    <string name="settings_material_you_label">P4 mode</string>
+    <string name="settings_material_you_description">Enables Material Design 3 Expressive and a new version 2 UI design. Uses Material You for dynamic colors from your wallpaper</string>
+    <string name="settings_oauth_error_default">Authentication failed</string>
+    <string name="settings_update_not_found">No updates found</string>
+    <string name="settings_update_error">Could not check for updates</string>
+    <string name="label_sex_male">Male</string>
+    <string name="label_sex_female">Female</string>
+    <string name="label_weight_kg">Weight (kg)</string>
+    <string name="label_height_cm">Height (cm)</string>
+    <string name="label_sleep_goal_hours">Sleep goal (hours)</string>
+    <string name="label_sleep_minutes">Sleep (minutes)</string>
+    <!-- V1 settings specific labels -->
+    <string name="vitals_connecting">Connecting…</string>
+    <!-- ── Estimated blood metrics opt-in (Jring only) ───────────────────── -->
+    <string name="settings_section_blood_metrics">Blood pressure &amp; sugar</string>
+    <string name="settings_blood_metrics_toggle">Estimate blood pressure &amp; sugar</string>
+    <string name="settings_blood_metrics_subtitle">Experimental, low-accuracy estimates from the ring\'s optical sensor — not a medical device. Off by default. Enabling captures and shows them, and starts saving readings from now on.</string>
+
+    <!-- ── Calibration (Jring only) ──────────────────────────────────────── -->
+    <string name="settings_section_calibration">Calibration</string>
+    <string name="settings_calibration_subtitle">Calibrate blood pressure and blood sugar against a reference reading.</string>
+    <string name="settings_calibration_colmi_note">This ring measures all metrics directly from its sensors — no calibration needed.</string>
+    <string name="settings_calibration_bp_label">Blood pressure offset</string>
+    <string name="settings_calibration_bp_value">%1$d / %2$d mmHg</string>
+    <string name="settings_calibration_bp_unset">Not set</string>
+    <string name="settings_calibration_glucose_label">Blood sugar offset</string>
+    <string name="settings_calibration_glucose_value">%1$s mg/dL</string>
+    <string name="settings_calibration_glucose_unset">Not calibrated</string>
+    <string name="settings_action_edit_calibration">Edit calibration</string>
+    <string name="dialog_calibration_title">Calibration</string>
+    <string name="dialog_calibration_bp_header">Blood pressure (reference cuff)</string>
+    <string name="dialog_calibration_bp_systolic">Systolic</string>
+    <string name="dialog_calibration_bp_diastolic">Diastolic</string>
+    <string name="dialog_calibration_bp_help">Sent to the ring so it offsets its readings to match your cuff.</string>
+    <string name="dialog_calibration_glucose_header">Blood sugar (reference reading)</string>
+    <string name="dialog_calibration_glucose_field">Reference (mg/dL)</string>
+    <string name="dialog_calibration_glucose_help">Applies a display offset against your last ring reading. Take a blood sugar measurement first.</string>
+    <string name="dialog_calibration_glucose_calibrate">Calibrate blood sugar</string>
+    <string name="dialog_calibration_glucose_reset">Reset blood sugar offset</string>
+    <string name="settings_glucose_calibrate_needs_reading">Take a blood sugar measurement first, then calibrate.</string>
+
+    <!-- ── Shared dialogs (SettingsScreen) ───────────────────────────────── -->
+    <string name="dialog_ai_model_title">AI Model</string>
+    <string name="dialog_ai_model_field_label">Model name</string>
+    <string name="dialog_edit_profile_title">Edit Profile</string>
+    <string name="dialog_edit_goals_title">Edit Goals</string>
+    <string name="dialog_forget_ring_title">Forget ring?</string>
+    <string name="dialog_forget_ring_message">This will unpair your ring. You can pair it again at any time.</string>
+    <string name="dialog_oauth_waiting_title">Waiting for OpenAI</string>
+    <string name="dialog_oauth_waiting_message">Complete the login in your browser, then return here.</string>
+    <string name="dialog_oauth_success_title">Connected</string>
+    <string name="dialog_oauth_success_message">You\'re now logged in to OpenAI. AI Coach is ready.</string>
+    <string name="dialog_oauth_error_title">Login failed</string>
+    <string name="dialog_clear_chat_title">Clear chat history</string>
+    <string name="dialog_clear_chat_message">This will permanently delete all messages in this conversation. This cannot be undone.</string>
+    <string name="dialog_delete_workout_title">Delete this workout?</string>
+    <string name="dialog_delete_workout_message">This permanently removes the workout and its data. This can\'t be undone.</string>
+    <string name="dialog_finish_workout_title">Finish workout?</string>
+    <string name="dialog_finish_workout_message">Your workout will be saved with its time and ring measurements.</string>
+    <string name="dialog_discard_workout_title">Discard workout?</string>
+    <string name="dialog_discard_workout_message">This recording will be deleted and won\'t count toward your activity.</string>
+
+    <!-- ── Pairing screen ────────────────────────────────────────────────── -->
+    <string name="pairing_screen_title">Add your ring</string>
+    <string name="pairing_instructions">Swipe to find your model, then tap to connect. You can also explore first and pair later.</string>
+    <string name="pairing_connected_title">Connected!</string>
+    <string name="pairing_connected_message">Your ring is paired and ready.</string>
+    <string name="pairing_ring_placeholder_title">Smart Ring</string>
+    <string name="pairing_ring_placeholder_message">Make sure your ring is nearby and charged.</string>
+    <string name="pairing_status_connecting">Connecting…</string>
+    <string name="pairing_status_scanning">Looking for rings nearby…</string>
+    <string name="pairing_no_rings_title">No rings found yet</string>
+    <string name="pairing_no_rings_message">Wake the ring by tapping or moving it, and keep it close.</string>
+
+    <!-- ── Record / workout screens ──────────────────────────────────────── -->
+    <string name="record_select_header">Choose activity</string>
+    <string name="record_gps_toggle_label">Use GPS route</string>
+    <string name="record_gps_toggle_helper_on">Track your route on a map</string>
+    <string name="record_gps_toggle_helper_off">Not available for this activity</string>
+    <string name="record_live_status_paused">Paused</string>
+    <string name="record_live_status_recording">Recording</string>
+    <string name="record_summary_saved_label">Workout saved</string>
+    <!-- Activity kinds -->
+    <string name="activity_kind_run">Run</string>
+    <string name="activity_kind_run_helper">Road or trail running</string>
+    <string name="activity_kind_walk">Walk</string>
+    <string name="activity_kind_walk_helper">Walking or power walking</string>
+    <string name="activity_kind_cycle">Cycle</string>
+    <string name="activity_kind_cycle_helper">Road or indoor cycling</string>
+    <string name="activity_kind_swim">Swim</string>
+    <string name="activity_kind_swim_helper">Pool or open water</string>
+    <string name="activity_kind_hike">Hike</string>
+    <string name="activity_kind_hike_helper">Trail hiking or trekking</string>
+    <string name="activity_kind_other">Other</string>
+    <string name="activity_kind_other_helper">Gym, HIIT, or other activity</string>
+
+    <!-- ── Onboarding ─────────────────────────────────────────────────────── -->
+    <string name="onboarding_welcome_subtitle">Your ring data, activity, sleep, and coach in one native app.</string>
+    <string name="onboarding_action_get_started">Get started</string>
+    <string name="onboarding_baseline_title">Learning your baseline</string>
+    <string name="onboarding_baseline_subtitle">Wear the ring through the day and sync after sleep so trends become personal.</string>
+    <string name="onboarding_profile_title">Set profile</string>
+    <string name="onboarding_profile_description">Name and body metrics help PulseLoop personalise summaries and tune calorie estimates.</string>
+    <string name="onboarding_label_your_name">Your name</string>
+    <string name="label_biological_sex">Biological sex</string>
+    <string name="onboarding_goals_title">Goals</string>
+    <string name="onboarding_goals_description">Set your daily targets. You can adjust these any time in Settings.</string>
+    <string name="onboarding_pair_title">Pair your ring</string>
+    <string name="onboarding_pair_subtitle">Search for your jring or Colmi ring nearby.</string>
+
+    <!-- ── Heart rate zones (live workout) ────────────────────────────────── -->
+    <string name="label_hr_zone">Heart Rate Zone</string>
+    <string name="hr_zone_active_label">Zone %1$d · %2$s</string>
+    <string name="hr_zone_warming_up">Warming up…</string>
+    <string name="hr_zone_1_name">Warm Up</string>
+    <string name="hr_zone_2_name">Fat Burn</string>
+    <string name="hr_zone_3_name">Aerobic</string>
+    <string name="hr_zone_4_name">Anaerobic</string>
+    <string name="hr_zone_5_name">Maximum</string>
+
+    <!-- ── Debug screen ───────────────────────────────────────────────────── -->
+    <string name="debug_section_header">DEBUG</string>
+    <string name="debug_ble_state_label">BLE State</string>
+    <string name="debug_device_label">Device</string>
+    <string name="debug_address_label">Address</string>
+    <string name="debug_battery_label">Battery</string>
+    <string name="debug_tab_packets">Packets (%1$d)</string>
+    <string name="debug_tab_logs">Logs (%1$d)</string>
+    <string name="debug_no_packets">No packets captured yet.</string>
+    <string name="debug_no_logs">No log entries yet.</string>
+
+    <!-- ── Shared units ───────────────────────────────────────────────────── -->
+    <string name="unit_ms">ms</string>
+    <string name="unit_celsius">°C</string>
+    <string name="label_address">Address</string>
+
+    <!-- ── Data export (OpenTelemetry / OTLP) ─────────────────────────────── -->
+    <string name="otlp_enable_export">Enable export</string>
+    <string name="otlp_intro">Pushes your health data to an OTLP/HTTP endpoint as gauge metrics (Grafana Alloy, VictoriaMetrics, ClickHouse, Prometheus/Mimir, …). We append /v1/metrics to the URL unless it already ends in it.</string>
+    <string name="otlp_endpoint_label">Endpoint URL</string>
+    <string name="otlp_endpoint_placeholder">https://otlp.example.com</string>
+    <string name="otlp_authentication">Authentication</string>
+    <string name="otlp_auth_none">None</string>
+    <string name="otlp_auth_basic">Basic</string>
+    <string name="otlp_auth_bearer">Bearer</string>
+    <string name="otlp_username">Username</string>
+    <string name="otlp_password">Password</string>
+    <string name="otlp_bearer_token">Bearer token</string>
+    <string name="otlp_custom_header">Custom header (optional)</string>
+    <string name="otlp_custom_header_help" formatted="false">For multi-tenant backends (e.g. X-Scope-OrgID for Loki/Mimir), or paste a Grafana Cloud auth header verbatim — name \'Authorization\', value \'Basic …\' (a %20 is decoded to a space).</string>
+    <string name="otlp_header_name">Header name</string>
+    <string name="otlp_header_value">Header value</string>
+    <string name="otlp_include_gps">Include GPS routes</string>
+    <string name="otlp_include_gps_help">GPS is exported as lat/lon gauges correlated by time (off by default).</string>
+    <string name="otlp_wifi_only">Export on Wi-Fi only</string>
+    <string name="otlp_test_connection">Test connection</string>
+    <string name="otlp_export_now">Export now</string>
+    <string name="otlp_run_backfill">Run full backfill</string>
+    <string name="otlp_testing">Testing…</string>
+    <string name="otlp_export_status">Export status</string>
+    <string name="otlp_refresh">Refresh</string>
+    <string name="otlp_msg_enter_endpoint">Enter an endpoint URL first</string>
+    <string name="otlp_msg_test_ok">Connected — endpoint accepted the test metric</string>
+    <string name="otlp_msg_busy">Endpoint busy or unreachable; try again</string>
+    <string name="otlp_msg_payload_too_large">Endpoint rejected the payload size</string>
+    <string name="otlp_msg_failed">Failed (%1$s): %2$s</string>
+    <string name="otlp_msg_incremental_scheduled">Incremental export scheduled</string>
+    <string name="otlp_msg_backfill_scheduled">Full backfill scheduled</string>
 </resources>

@@ -3,6 +3,7 @@ package space.linuxct.pulseloop.coach.tools
 import space.linuxct.pulseloop.data.db.dao.ActivityDailyDao
 import space.linuxct.pulseloop.data.db.dao.ActivitySessionDao
 import space.linuxct.pulseloop.data.db.dao.CoachDao
+import space.linuxct.pulseloop.data.db.dao.DeviceDao
 import space.linuxct.pulseloop.data.db.dao.MeasurementDao
 import space.linuxct.pulseloop.data.db.dao.ProfileDao
 import space.linuxct.pulseloop.data.db.dao.SleepDao
@@ -13,5 +14,9 @@ data class ToolContext(
     val sleepDao: SleepDao,
     val activitySessionDao: ActivitySessionDao,
     val profileDao: ProfileDao,
-    val coachDao: CoachDao
+    val coachDao: CoachDao,
+    val deviceDao: DeviceDao,
+    // When false (default), the estimated blood-pressure / blood-sugar feature is off: the coach must
+    // not be aware of those metrics — tools hide them and the data-availability overview omits them.
+    val bloodMetricsEnabled: Boolean = false
 )

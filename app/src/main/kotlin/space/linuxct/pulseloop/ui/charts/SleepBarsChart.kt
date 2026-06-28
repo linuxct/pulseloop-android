@@ -15,8 +15,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import space.linuxct.pulseloop.R
 import androidx.compose.foundation.shape.RoundedCornerShape
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.rememberVicoScrollState
@@ -44,9 +46,6 @@ import com.patrykandpatrick.vico.core.common.shape.DashedShape
 import space.linuxct.pulseloop.domain.model.SleepBar
 import space.linuxct.pulseloop.ui.theme.LocalPulseColors
 
-// Sleep-bar gradient colors matching iOS SleepDurationHistogramChart
-private val SleepBarTop = Color(0xFF8B7CFF)
-private val SleepBarBottom = Color(0xFF3F2DD8)
 
 /**
  * Vertical bar chart for nightly sleep duration.
@@ -83,7 +82,7 @@ fun SleepBarsChart(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = "No sleep data",
+                text = stringResource(R.string.chart_empty_no_sleep_data),
                 color = colors.textMuted,
                 style = MaterialTheme.typography.bodySmall,
             )
@@ -117,7 +116,7 @@ fun SleepBarsChart(
     // same single-series approach but build two separate columnProviders and pick based
     // on actual values by using a custom ColumnProvider.
     val presentColumn = rememberLineComponent(
-        fill = fill(SleepBarTop),
+        fill = fill(colors.sleepBar),
         thickness = barWidth,
         shape = CorneredShape.rounded(
             topLeftPercent = if (slim) 30 else 50,
@@ -178,9 +177,9 @@ fun SleepBarsChart(
         listOf(HorizontalLine(y = { goalMin.toDouble() }, line = goalLine))
     } else emptyList()
 
-    val sleepMarkerBg = rememberShapeComponent(fill = fill(Color(0xFF1E2D45)), shape = CorneredShape.Pill)
+    val sleepMarkerBg = rememberShapeComponent(fill = fill(colors.tooltipBackground), shape = CorneredShape.Pill)
     val sleepMarkerLabel = rememberTextComponent(
-        color = Color.White,
+        color = colors.tooltipText,
         textSize = 12.sp,
         padding = Dimensions(8f, 4f, 8f, 4f),
         background = sleepMarkerBg,
@@ -188,9 +187,9 @@ fun SleepBarsChart(
     val sleepMarkerFormatter = remember(bars) {
         CartesianMarkerValueFormatter { _, targets ->
             val col = (targets.firstOrNull() as? ColumnCartesianLayerMarkerTarget)
-                ?.columns?.firstOrNull() ?: return@CartesianMarkerValueFormatter ""
-            val bar = bars.getOrNull(col.entry.x.toInt()) ?: return@CartesianMarkerValueFormatter ""
-            if (!bar.present || bar.durationMin == null) return@CartesianMarkerValueFormatter ""
+                ?.columns?.firstOrNull() ?: return@CartesianMarkerValueFormatter " "
+            val bar = bars.getOrNull(col.entry.x.toInt()) ?: return@CartesianMarkerValueFormatter " "
+            if (!bar.present || bar.durationMin == null) return@CartesianMarkerValueFormatter " "
             val h = bar.durationMin / 60
             val m = bar.durationMin % 60
             when {

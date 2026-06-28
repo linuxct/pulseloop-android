@@ -12,7 +12,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import space.linuxct.pulseloop.R
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.rememberVicoScrollState
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
@@ -39,6 +41,7 @@ fun Spo2LineChart(
     height: Int = 150,
 ) {
     val colors = LocalPulseColors.current
+    val unitPercent = stringResource(R.string.unit_percent)
 
     if (samples.size < 2) {
         Box(
@@ -46,7 +49,7 @@ fun Spo2LineChart(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = "No data",
+                text = stringResource(R.string.chart_empty_no_data),
                 color = colors.textMuted,
                 style = MaterialTheme.typography.bodySmall,
             )
@@ -79,7 +82,7 @@ fun Spo2LineChart(
         rangeProvider = remember { CartesianLayerRangeProvider.fixed(minY = 90.0, maxY = 100.0) },
     )
 
-    val marker = rememberPulseChartMarker("%", samples, showGuideline = true)
+    val marker = rememberPulseChartMarker(unitPercent, samples, showGuideline = true)
     val chart = rememberCartesianChart(layer, marker = marker)
 
     val outerMod = if (modifier == Modifier) Modifier.fillMaxWidth().height(height.dp) else modifier
@@ -103,6 +106,8 @@ fun Spo2LineChart(
                     center = Offset(x, y),
                 )
             }
+
+            drawTimeMarkers(samples)
         }
 
         // Chart host on top so Vico's marker (tooltip) renders above the dots

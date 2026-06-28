@@ -78,3 +78,11 @@
 
 # ── Vico charts ───────────────────────────────────────────────────────────────
 -dontwarn com.patrykandpatrick.vico.**
+
+# ── Protobuf javalite (OTLP export) ───────────────────────────────────────────
+# protobuf-lite accesses generated message fields reflectively during (de)serialization.
+# Keep every GeneratedMessageLite subclass (the vendored OTLP messages) and their members.
+-keep class * extends com.google.protobuf.GeneratedMessageLite { *; }
+-keepclassmembers class * extends com.google.protobuf.GeneratedMessageLite { *; }
+-keep class io.opentelemetry.proto.** { *; }
+-dontwarn com.google.protobuf.**

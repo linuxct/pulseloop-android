@@ -22,6 +22,9 @@ interface ActivityDailyDao {
     @Query("SELECT * FROM activity_daily WHERE date >= :cutoffMs ORDER BY date DESC")
     suspend fun getSince(cutoffMs: Long): List<ActivityDailyEntity>
 
+    @Query("SELECT * FROM activity_daily WHERE date >= :startMs AND date <= :endMs ORDER BY date DESC")
+    suspend fun getBetween(startMs: Long, endMs: Long): List<ActivityDailyEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(row: ActivityDailyEntity)
 }

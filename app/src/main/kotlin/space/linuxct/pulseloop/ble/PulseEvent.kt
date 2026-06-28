@@ -11,6 +11,7 @@ sealed class PulseEvent {
     data class DeviceStateChanged(val state: RingConnectionState, val address: String?) : PulseEvent()
     data class DeviceIdentified(val deviceType: RingDeviceType, val capabilities: Set<WearableCapability>) : PulseEvent()
     data class BatteryLevel(val percent: Int) : PulseEvent()
+    data class FirmwareVersion(val version: String) : PulseEvent()
     data class RawPacket(val direction: PacketDirection, val data: ByteArray, val decoded: RingDecodedEvent) : PulseEvent()
     data class DerivedUpdate(val kind: String, val entityType: String, val entityId: String, val payloadJson: String?) : PulseEvent()
     data class ActivityUpdate(val timestamp: Long, val steps: Int, val distanceMeters: Double, val calories: Double) : PulseEvent()

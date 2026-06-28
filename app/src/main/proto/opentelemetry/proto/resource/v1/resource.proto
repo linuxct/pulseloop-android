@@ -1,0 +1,14 @@
+// Trimmed, wire-compatible subset of the OTLP resource proto.
+syntax = "proto3";
+
+package opentelemetry.proto.resource.v1;
+
+import "opentelemetry/proto/common/v1/common.proto";
+
+option java_package = "io.opentelemetry.proto.resource.v1";
+option java_multiple_files = true;
+
+message Resource {
+  repeated opentelemetry.proto.common.v1.KeyValue attributes = 1;
+  uint32 dropped_attributes_count = 2;
+}

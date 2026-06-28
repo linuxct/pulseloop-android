@@ -3,30 +3,27 @@ package space.linuxct.pulseloop.ui.screens.settings
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Snackbar
@@ -46,17 +43,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import space.linuxct.pulseloop.domain.model.RingConnectionState
-import space.linuxct.pulseloop.ui.components.PulseCard
-import space.linuxct.pulseloop.ui.components.SecondaryButton
-import space.linuxct.pulseloop.ui.navigation.NavRoute
+import space.linuxct.pulseloop.R
+import space.linuxct.pulseloop.ui.screens.settings.v1.SettingsContentV1
+import space.linuxct.pulseloop.ui.screens.settings.v2.SettingsContentV2
 import space.linuxct.pulseloop.ui.theme.LocalPulseColors
+import space.linuxct.pulseloop.ui.theme.LocalUiMode
+import space.linuxct.pulseloop.ui.theme.UiMode
 import space.linuxct.pulseloop.ui.viewmodel.OAuthState
 import space.linuxct.pulseloop.ui.viewmodel.SettingsViewModel
 
@@ -67,17 +65,25 @@ fun SettingsScreen(navController: NavController, vm: SettingsViewModel = hiltVie
     val context = LocalContext.current
     val state by vm.uiState.collectAsState()
     val connectionState by vm.connectionState.collectAsState()
+    val isFindingDevice by vm.isFindingDevice.collectAsState()
     val openAiKey by vm.openAiKey.collectAsState()
     val oauthState by vm.oauthState.collectAsState()
     val isCheckingUpdate by vm.isCheckingUpdate.collectAsState()
     val coachModel by vm.coachModel.collectAsState()
+    val useMaterialYou by vm.useMaterialYou.collectAsState()
+    val bpCalSystolic by vm.bpCalSystolic.collectAsState()
+    val bpCalDiastolic by vm.bpCalDiastolic.collectAsState()
+    val glucoseOffsetMgdl by vm.glucoseOffsetMgdl.collectAsState()
+    val glucoseRefMgdl by vm.glucoseRefMgdl.collectAsState()
+    val bloodMetricsEnabled by vm.bloodMetricsEnabled.collectAsState()
     var showGoalDialog by remember { mutableStateOf(false) }
     var showProfileDialog by remember { mutableStateOf(false) }
     var showForgetDialog by remember { mutableStateOf(false) }
     var showModelDialog by remember { mutableStateOf(false) }
+    var showCalibrationDialog by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
+    val isMY = LocalUiMode.current == UiMode.MATERIAL_YOU
 
-    // Open browser when OAuth flow or update check emits a URL
     LaunchedEffect(Unit) {
         vm.launchBrowser.collect { url ->
             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
@@ -93,144 +99,75 @@ fun SettingsScreen(navController: NavController, vm: SettingsViewModel = hiltVie
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.background)
+            .background(if (isMY) MaterialTheme.colorScheme.background else colors.background)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            TopAppBar(
-                title = { Text("Settings", color = colors.textPrimary) },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = colors.textPrimary)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = colors.background),
-                windowInsets = WindowInsets(0)
-            )
-
-            LazyColumn(
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                // Profile section
-                item {
-                    SectionHeader("Profile")
-                    PulseCard(modifier = Modifier.fillMaxWidth()) {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            val profile = state.profile
-                            StatusRow("Name", profile?.name ?: "Not set")
-                            StatusRow("Age", profile?.age?.toString() ?: "Not set")
-                            StatusRow("Sex", profile?.biologicalSex?.replaceFirstChar { it.uppercase() } ?: "Not set")
-                            StatusRow("Height", profile?.heightCm?.let { "$it cm" } ?: "Not set")
-                            StatusRow("Weight", profile?.weightKg?.let { "%.1f kg".format(it) } ?: "Not set")
+            if (isMY) {
+                SettingsLargeHeaderV2(
+                    title = stringResource(R.string.screen_title_settings),
+                    onBack = { navController.popBackStack() }
+                )
+            } else {
+                TopAppBar(
+                    title = { Text(stringResource(R.string.screen_title_settings), color = colors.textPrimary) },
+                    navigationIcon = {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back), tint = colors.textPrimary)
                         }
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    SecondaryButton(title = "Edit profile", onClick = { showProfileDialog = true })
-                }
-
-                // Ring section
-                item {
-                    SectionHeader("Ring")
-                    PulseCard(modifier = Modifier.fillMaxWidth()) {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            val device = state.device
-                            if (device != null) {
-                                StatusRow("Device", device.name)
-                                StatusRow("Address", device.macAddress)
-                                StatusRow("Battery", "${device.batteryLevel ?: "--"}%")
-                                StatusRow("Status", device.stateRaw.replaceFirstChar { it.uppercase() })
-                            } else {
-                                StatusRow("Status", "No ring paired")
-                            }
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    if (state.device == null) {
-                        SecondaryButton(title = "Pair a ring", onClick = {
-                            navController.navigate(NavRoute.Pairing.route)
-                        })
-                    } else {
-                        if (connectionState == RingConnectionState.CONNECTED) {
-                            SecondaryButton(title = "Sync now", onClick = { vm.syncNow() })
-                            Spacer(modifier = Modifier.height(8.dp))
-                        }
-                        SecondaryButton(title = "Forget ring", onClick = { showForgetDialog = true })
-                    }
-                }
-
-                // Goals section
-                item {
-                    SectionHeader("Goals")
-                    PulseCard(modifier = Modifier.fillMaxWidth()) {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            StatusRow("Daily steps", "%,d".format(state.goals?.dailySteps ?: 10_000))
-                            StatusRow("Sleep", "${(state.goals?.sleepMinutes ?: 480) / 60}h ${(state.goals?.sleepMinutes ?: 480) % 60}m")
-                            StatusRow("Active minutes", "${state.goals?.activeMinutes ?: 45} min")
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    SecondaryButton(title = "Edit goals", onClick = { showGoalDialog = true })
-                }
-
-                // AI Coach section
-                item {
-                    SectionHeader("AI Coach")
-                    PulseCard(modifier = Modifier.fillMaxWidth()) {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            StatusRow("OpenAI", if (openAiKey.isNullOrBlank()) "Not connected" else "Connected")
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { showModelDialog = true },
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text("Model", fontSize = 14.sp, color = colors.textSecondary)
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(coachModel, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = colors.textPrimary)
-                                    Icon(Icons.Filled.Edit, contentDescription = "Edit model", tint = colors.textMuted, modifier = Modifier.size(14.dp))
-                                }
-                            }
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    if (openAiKey.isNullOrBlank()) {
-                        SecondaryButton(title = "Login with OpenAI", onClick = { vm.startOpenAIOAuth() })
-                    } else {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            SecondaryButton(title = "Re-login", onClick = { vm.startOpenAIOAuth() }, modifier = Modifier.weight(1f))
-                            SecondaryButton(title = "Logout", onClick = { vm.clearOpenAiAuth() }, modifier = Modifier.weight(1f))
-                        }
-                    }
-                }
-
-                // About / version
-                item {
-                    val packageInfo = remember {
-                        context.packageManager.getPackageInfo(context.packageName, 0)
-                    }
-                    val versionString = "${packageInfo.versionName}"
-                    SectionHeader("About")
-                    PulseCard(modifier = Modifier.fillMaxWidth()) {
-                        StatusRow("Version", versionString)
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    SecondaryButton(
-                        title = if (isCheckingUpdate) "Checking…" else "Check for updates",
-                        enabled = !isCheckingUpdate,
-                        onClick = { vm.checkForUpdates() }
-                    )
-                }
-
-                item { Spacer(modifier = Modifier.height(80.dp)) }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = colors.background),
+                    windowInsets = WindowInsets(0)
+                )
             }
+
+            if (isMY) {
+                SettingsContentV2(
+                    navController = navController,
+                    vm = vm,
+                    state = state,
+                    connectionState = connectionState,
+                    isFindingDevice = isFindingDevice,
+                    openAiKey = openAiKey,
+                    coachModel = coachModel,
+                    useMaterialYou = useMaterialYou,
+                    isCheckingUpdate = isCheckingUpdate,
+                    bpCalSystolic = bpCalSystolic,
+                    bpCalDiastolic = bpCalDiastolic,
+                    glucoseOffsetMgdl = glucoseOffsetMgdl,
+                    bloodMetricsEnabled = bloodMetricsEnabled,
+                    onShowProfile = { showProfileDialog = true },
+                    onShowGoals = { showGoalDialog = true },
+                    onShowModel = { showModelDialog = true },
+                    onShowForget = { showForgetDialog = true },
+                    onShowCalibration = { showCalibrationDialog = true }
+                )
+            } else {
+                SettingsContentV1(
+                    navController = navController,
+                    vm = vm,
+                    state = state,
+                    connectionState = connectionState,
+                    isFindingDevice = isFindingDevice,
+                    openAiKey = openAiKey,
+                    coachModel = coachModel,
+                    useMaterialYou = useMaterialYou,
+                    isCheckingUpdate = isCheckingUpdate,
+                    bpCalSystolic = bpCalSystolic,
+                    bpCalDiastolic = bpCalDiastolic,
+                    glucoseOffsetMgdl = glucoseOffsetMgdl,
+                    bloodMetricsEnabled = bloodMetricsEnabled,
+                    onShowProfile = { showProfileDialog = true },
+                    onShowGoals = { showGoalDialog = true },
+                    onShowModel = { showModelDialog = true },
+                    onShowForget = { showForgetDialog = true },
+                    onShowCalibration = { showCalibrationDialog = true }
+                )
+            }
+
         }
 
-        // Model edit dialog
+        // ── Shared dialogs ────────────────────────────────────────────────
+
         if (showModelDialog) {
             var modelText by remember { mutableStateOf(coachModel) }
             val fieldColors = OutlinedTextFieldDefaults.colors(
@@ -244,12 +181,12 @@ fun SettingsScreen(navController: NavController, vm: SettingsViewModel = hiltVie
             )
             AlertDialog(
                 onDismissRequest = { showModelDialog = false },
-                title = { Text("AI Model") },
+                title = { Text(stringResource(R.string.dialog_ai_model_title)) },
                 text = {
                     OutlinedTextField(
                         value = modelText,
                         onValueChange = { modelText = it },
-                        label = { Text("Model name") },
+                        label = { Text(stringResource(R.string.dialog_ai_model_field_label)) },
                         singleLine = true,
                         colors = fieldColors,
                         modifier = Modifier.fillMaxWidth()
@@ -260,14 +197,13 @@ fun SettingsScreen(navController: NavController, vm: SettingsViewModel = hiltVie
                         val trimmed = modelText.trim()
                         if (trimmed.isNotBlank()) vm.setCoachModel(trimmed)
                         showModelDialog = false
-                    }) { Text("Save") }
+                    }) { Text(stringResource(R.string.action_save)) }
                 },
-                dismissButton = { TextButton(onClick = { showModelDialog = false }) { Text("Cancel") } },
+                dismissButton = { TextButton(onClick = { showModelDialog = false }) { Text(stringResource(R.string.action_cancel)) } },
                 containerColor = colors.card
             )
         }
 
-        // Profile edit dialog
         if (showProfileDialog) {
             val profile = state.profile
             var nameText by remember { mutableStateOf(profile?.name ?: "") }
@@ -275,7 +211,6 @@ fun SettingsScreen(navController: NavController, vm: SettingsViewModel = hiltVie
             var sexText by remember { mutableStateOf(profile?.biologicalSex ?: "") }
             var weightText by remember { mutableStateOf(profile?.weightKg?.let { "%.1f".format(it) } ?: "") }
             var heightText by remember { mutableStateOf(profile?.heightCm?.toString() ?: "") }
-
             val fieldColors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = colors.accent,
                 unfocusedBorderColor = colors.borderStrong,
@@ -285,17 +220,16 @@ fun SettingsScreen(navController: NavController, vm: SettingsViewModel = hiltVie
                 unfocusedTextColor = colors.textPrimary,
                 cursorColor = colors.accent
             )
-
             AlertDialog(
                 onDismissRequest = { showProfileDialog = false },
-                title = { Text("Edit Profile") },
+                title = { Text(stringResource(R.string.dialog_edit_profile_title)) },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(value = nameText, onValueChange = { nameText = it }, label = { Text("Name") }, singleLine = true, colors = fieldColors)
-                        OutlinedTextField(value = ageText, onValueChange = { ageText = it.filter { c -> c.isDigit() } }, label = { Text("Age") }, singleLine = true, colors = fieldColors, keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number))
-                        OutlinedTextField(value = weightText, onValueChange = { weightText = it }, label = { Text("Weight (kg)") }, singleLine = true, colors = fieldColors, keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Decimal))
-                        OutlinedTextField(value = heightText, onValueChange = { heightText = it.filter { c -> c.isDigit() } }, label = { Text("Height (cm)") }, singleLine = true, colors = fieldColors, keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number))
-                        Text("Sex", fontSize = 13.sp, color = colors.textSecondary)
+                        OutlinedTextField(value = nameText, onValueChange = { nameText = it }, label = { Text(stringResource(R.string.label_name)) }, singleLine = true, colors = fieldColors)
+                        OutlinedTextField(value = ageText, onValueChange = { ageText = it.filter { c -> c.isDigit() } }, label = { Text(stringResource(R.string.label_age)) }, singleLine = true, colors = fieldColors, keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number))
+                        OutlinedTextField(value = weightText, onValueChange = { weightText = it }, label = { Text(stringResource(R.string.label_weight_kg)) }, singleLine = true, colors = fieldColors, keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Decimal))
+                        OutlinedTextField(value = heightText, onValueChange = { heightText = it.filter { c -> c.isDigit() } }, label = { Text(stringResource(R.string.label_height_cm)) }, singleLine = true, colors = fieldColors, keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number))
+                        Text(stringResource(R.string.label_sex), fontSize = 13.sp, color = colors.textSecondary)
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             listOf("male", "female", "other").forEach { option ->
                                 FilterChip(
@@ -321,14 +255,13 @@ fun SettingsScreen(navController: NavController, vm: SettingsViewModel = hiltVie
                             heightCm = heightText.toIntOrNull()
                         )
                         showProfileDialog = false
-                    }) { Text("Save") }
+                    }) { Text(stringResource(R.string.action_save)) }
                 },
-                dismissButton = { TextButton(onClick = { showProfileDialog = false }) { Text("Cancel") } },
+                dismissButton = { TextButton(onClick = { showProfileDialog = false }) { Text(stringResource(R.string.action_cancel)) } },
                 containerColor = colors.card
             )
         }
 
-        // Goals edit dialog
         if (showGoalDialog) {
             var stepsText by remember { mutableStateOf(state.goals?.dailySteps?.toString() ?: "10000") }
             var sleepMinsText by remember { mutableStateOf(state.goals?.sleepMinutes?.toString() ?: "480") }
@@ -344,50 +277,88 @@ fun SettingsScreen(navController: NavController, vm: SettingsViewModel = hiltVie
             )
             AlertDialog(
                 onDismissRequest = { showGoalDialog = false },
-                title = { Text("Edit Goals") },
+                title = { Text(stringResource(R.string.dialog_edit_goals_title)) },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(value = stepsText, onValueChange = { stepsText = it.filter { c -> c.isDigit() } }, label = { Text("Daily steps") }, singleLine = true, colors = fieldColors, keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number))
-                        OutlinedTextField(value = sleepMinsText, onValueChange = { sleepMinsText = it.filter { c -> c.isDigit() } }, label = { Text("Sleep (minutes)") }, singleLine = true, colors = fieldColors, keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number))
-                        OutlinedTextField(value = activeMinsText, onValueChange = { activeMinsText = it.filter { c -> c.isDigit() } }, label = { Text("Active minutes") }, singleLine = true, colors = fieldColors, keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number))
+                        OutlinedTextField(value = stepsText, onValueChange = { stepsText = it.filter { c -> c.isDigit() } }, label = { Text(stringResource(R.string.label_daily_steps)) }, singleLine = true, colors = fieldColors, keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number))
+                        OutlinedTextField(value = sleepMinsText, onValueChange = { sleepMinsText = it.filter { c -> c.isDigit() } }, label = { Text(stringResource(R.string.label_sleep_minutes)) }, singleLine = true, colors = fieldColors, keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number))
+                        OutlinedTextField(value = activeMinsText, onValueChange = { activeMinsText = it.filter { c -> c.isDigit() } }, label = { Text(stringResource(R.string.label_active_minutes)) }, singleLine = true, colors = fieldColors, keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number))
                     }
                 },
                 confirmButton = {
                     TextButton(onClick = {
-                        vm.updateGoals(
-                            steps = stepsText.toIntOrNull() ?: 10_000,
-                            sleepMinutes = sleepMinsText.toIntOrNull() ?: 480,
-                            activeMinutes = activeMinsText.toIntOrNull() ?: 45
-                        )
+                        vm.updateGoals(steps = stepsText.toIntOrNull() ?: 10_000, sleepMinutes = sleepMinsText.toIntOrNull() ?: 480, activeMinutes = activeMinsText.toIntOrNull() ?: 45)
                         showGoalDialog = false
-                    }) { Text("Save") }
+                    }) { Text(stringResource(R.string.action_save)) }
                 },
-                dismissButton = { TextButton(onClick = { showGoalDialog = false }) { Text("Cancel") } },
+                dismissButton = { TextButton(onClick = { showGoalDialog = false }) { Text(stringResource(R.string.action_cancel)) } },
                 containerColor = colors.card
             )
         }
 
-        // Forget ring confirmation
+        if (showCalibrationDialog) {
+            var sysText by remember { mutableStateOf(bpCalSystolic.takeIf { it > 0 }?.toString() ?: "") }
+            var diaText by remember { mutableStateOf(bpCalDiastolic.takeIf { it > 0 }?.toString() ?: "") }
+            var glucoseRefText by remember { mutableStateOf(glucoseRefMgdl.takeIf { it > 0.0 }?.let { "%.0f".format(it) } ?: "") }
+            val fieldColors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = colors.accent,
+                unfocusedBorderColor = colors.borderStrong,
+                focusedLabelColor = colors.accent,
+                unfocusedLabelColor = colors.textMuted,
+                focusedTextColor = colors.textPrimary,
+                unfocusedTextColor = colors.textPrimary,
+                cursorColor = colors.accent
+            )
+            AlertDialog(
+                onDismissRequest = { showCalibrationDialog = false },
+                title = { Text(stringResource(R.string.dialog_calibration_title)) },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(stringResource(R.string.dialog_calibration_bp_header), fontSize = 13.sp, color = colors.textSecondary)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(value = sysText, onValueChange = { sysText = it.filter { c -> c.isDigit() }.take(3) }, label = { Text(stringResource(R.string.dialog_calibration_bp_systolic)) }, singleLine = true, colors = fieldColors, modifier = Modifier.weight(1f), keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number))
+                            OutlinedTextField(value = diaText, onValueChange = { diaText = it.filter { c -> c.isDigit() }.take(3) }, label = { Text(stringResource(R.string.dialog_calibration_bp_diastolic)) }, singleLine = true, colors = fieldColors, modifier = Modifier.weight(1f), keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number))
+                        }
+                        Text(stringResource(R.string.dialog_calibration_bp_help), fontSize = 12.sp, color = colors.textMuted, lineHeight = 16.sp)
+                        Text(stringResource(R.string.dialog_calibration_glucose_header), fontSize = 13.sp, color = colors.textSecondary)
+                        OutlinedTextField(value = glucoseRefText, onValueChange = { glucoseRefText = it.filter { c -> c.isDigit() || c == '.' } }, label = { Text(stringResource(R.string.dialog_calibration_glucose_field)) }, singleLine = true, colors = fieldColors, keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Decimal))
+                        Text(stringResource(R.string.dialog_calibration_glucose_help), fontSize = 12.sp, color = colors.textMuted, lineHeight = 16.sp)
+                        TextButton(onClick = { vm.resetGlucoseCalibration(); glucoseRefText = "" }) {
+                            Text(stringResource(R.string.dialog_calibration_glucose_reset), color = colors.danger)
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        vm.setBpCalibration(sysText.toIntOrNull() ?: 0, diaText.toIntOrNull() ?: 0)
+                        glucoseRefText.toDoubleOrNull()?.let { if (it > 0.0) vm.calibrateGlucose(it) }
+                        showCalibrationDialog = false
+                    }) { Text(stringResource(R.string.action_save)) }
+                },
+                dismissButton = { TextButton(onClick = { showCalibrationDialog = false }) { Text(stringResource(R.string.action_cancel)) } },
+                containerColor = colors.card
+            )
+        }
+
         if (showForgetDialog) {
             AlertDialog(
                 onDismissRequest = { showForgetDialog = false },
-                title = { Text("Forget ring?") },
-                text = { Text("This will unpair your ring. You can pair it again at any time.", color = colors.textSecondary) },
+                title = { Text(stringResource(R.string.dialog_forget_ring_title)) },
+                text = { Text(stringResource(R.string.dialog_forget_ring_message), color = colors.textSecondary) },
                 confirmButton = {
                     TextButton(onClick = { vm.forgetDevice(); showForgetDialog = false }) {
-                        Text("Forget", color = colors.danger)
+                        Text(stringResource(R.string.action_forget), color = colors.danger)
                     }
                 },
-                dismissButton = { TextButton(onClick = { showForgetDialog = false }) { Text("Cancel") } },
+                dismissButton = { TextButton(onClick = { showForgetDialog = false }) { Text(stringResource(R.string.action_cancel)) } },
                 containerColor = colors.card
             )
         }
 
-        // OAuth waiting dialog
         if (oauthState is OAuthState.Waiting) {
             AlertDialog(
                 onDismissRequest = { vm.cancelOAuth() },
-                title = { Text("Waiting for OpenAI") },
+                title = { Text(stringResource(R.string.dialog_oauth_waiting_title)) },
                 text = {
                     Column(
                         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -395,82 +366,75 @@ fun SettingsScreen(navController: NavController, vm: SettingsViewModel = hiltVie
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         CircularProgressIndicator(color = colors.accent)
-                        Text(
-                            "Complete the login in your browser, then return here.",
-                            fontSize = 14.sp, color = colors.textSecondary, lineHeight = 20.sp
-                        )
+                        Text(stringResource(R.string.dialog_oauth_waiting_message), fontSize = 14.sp, color = colors.textSecondary, lineHeight = 20.sp)
                     }
                 },
                 confirmButton = {},
-                dismissButton = {
-                    TextButton(onClick = { vm.cancelOAuth() }) { Text("Cancel") }
-                },
+                dismissButton = { TextButton(onClick = { vm.cancelOAuth() }) { Text(stringResource(R.string.action_cancel)) } },
                 containerColor = colors.card
             )
         }
 
-        // OAuth success dialog
         if (oauthState is OAuthState.Success) {
             AlertDialog(
                 onDismissRequest = { vm.dismissOAuthResult() },
-                title = { Text("Connected") },
-                text = { Text("You're now logged in to OpenAI. AI Coach is ready.", color = colors.textSecondary) },
-                confirmButton = {
-                    TextButton(onClick = { vm.dismissOAuthResult() }) { Text("OK") }
-                },
+                title = { Text(stringResource(R.string.dialog_oauth_success_title)) },
+                text = { Text(stringResource(R.string.dialog_oauth_success_message), color = colors.textSecondary) },
+                confirmButton = { TextButton(onClick = { vm.dismissOAuthResult() }) { Text(stringResource(R.string.action_ok)) } },
                 containerColor = colors.card
             )
         }
 
-        // OAuth error dialog
         if (oauthState is OAuthState.Error) {
             val err = (oauthState as OAuthState.Error).message
             AlertDialog(
                 onDismissRequest = { vm.dismissOAuthResult() },
-                title = { Text("Login failed") },
+                title = { Text(stringResource(R.string.dialog_oauth_error_title)) },
                 text = { Text(err, fontSize = 14.sp, color = colors.textSecondary) },
-                confirmButton = {
-                    TextButton(onClick = { vm.dismissOAuthResult() }) { Text("OK") }
-                },
+                confirmButton = { TextButton(onClick = { vm.dismissOAuthResult() }) { Text(stringResource(R.string.action_ok)) } },
                 containerColor = colors.card
             )
         }
 
         SnackbarHost(
             hostState = snackbarHostState,
-            modifier = Modifier.align(Alignment.BottomCenter),
+            modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp),
             snackbar = { data ->
-                Snackbar(
-                    snackbarData = data,
-                    containerColor = colors.card,
-                    contentColor = colors.textPrimary
-                )
+                Snackbar(snackbarData = data, containerColor = colors.card, contentColor = colors.textPrimary)
             }
         )
     }
 }
 
 @Composable
-private fun SectionHeader(title: String) {
-    val colors = LocalPulseColors.current
-    Text(
-        title.uppercase(),
-        fontSize = 11.sp,
-        fontWeight = FontWeight.Medium,
-        color = colors.textMuted,
-        letterSpacing = 1.4.sp,
-        modifier = Modifier.padding(bottom = 6.dp)
-    )
+private fun SettingsLargeHeaderV2(title: String, onBack: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 8.dp)
+    ) {
+        FilledTonalIconButton(onClick = onBack) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = stringResource(R.string.cd_back),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Text(
+            text = title,
+            style = MaterialTheme.typography.displaySmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(start = 8.dp, top = 12.dp, bottom = 8.dp)
+        )
+    }
 }
 
-@Composable
-private fun StatusRow(label: String, value: String) {
-    val colors = LocalPulseColors.current
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(label, fontSize = 14.sp, color = colors.textSecondary)
-        Text(value, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = colors.textPrimary)
-    }
+/**
+ * The ring reports firmware as the official "<CID><DID>V<version>" string (e.g. "003A002AV138").
+ * Settings only needs the human-readable version segment, so show everything from "V" onward.
+ */
+fun formatFirmwareVersion(raw: String): String {
+    val version = raw.substringAfterLast('V', "")
+    return if (version.isNotEmpty()) "V$version" else raw
 }

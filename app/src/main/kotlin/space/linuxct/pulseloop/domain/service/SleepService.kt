@@ -37,8 +37,8 @@ object SleepService {
     fun dayReferenceNight(nowMs: Long = System.currentTimeMillis()): Long {
         val cal = Calendar.getInstance().apply { timeInMillis = nowMs }
         val hour = cal.get(Calendar.HOUR_OF_DAY)
-        val todayMidnight = todayMidnightMs()
-        return if (hour < 4) todayMidnight - 86_400_000L else todayMidnight
+        val refMidnight = dayMidnightMs(nowMs)
+        return if (hour < 4) refMidnight - 86_400_000L else refMidnight
     }
 
     fun summary(session: SleepSessionEntity, blocks: List<SleepStageBlockEntity>, includeStages: Boolean = true): SleepSummary {

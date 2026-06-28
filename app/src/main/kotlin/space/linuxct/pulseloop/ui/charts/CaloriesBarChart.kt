@@ -10,7 +10,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import space.linuxct.pulseloop.R
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.rememberVicoScrollState
 import com.patrykandpatrick.vico.core.cartesian.axis.HorizontalAxis
@@ -42,6 +44,7 @@ fun CaloriesBarChart(
     height: Int = 150,
 ) {
     val colors = LocalPulseColors.current
+    val unitKcal = stringResource(R.string.unit_kcal)
 
     if (points.isEmpty()) {
         Box(
@@ -49,7 +52,7 @@ fun CaloriesBarChart(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = "No data",
+                text = stringResource(R.string.chart_empty_no_data),
                 color = colors.textMuted,
                 style = MaterialTheme.typography.bodySmall,
             )
@@ -91,7 +94,7 @@ fun CaloriesBarChart(
         )
     } else null
 
-    val marker = rememberPulseChartMarker("kcal")
+    val marker = rememberPulseChartMarker(unitKcal)
     val layer = rememberColumnCartesianLayer(columnProvider = columnProvider)
     val chart = rememberCartesianChart(
         layer,

@@ -47,6 +47,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -57,6 +58,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import space.linuxct.pulseloop.R
 import space.linuxct.pulseloop.ble.DiscoveredRing
 import space.linuxct.pulseloop.ble.RingBLEClient
 import space.linuxct.pulseloop.data.db.entities.DeviceEntity
@@ -136,10 +138,10 @@ fun PairingScreen(onDone: () -> Unit, vm: PairingViewModel = hiltViewModel()) {
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             TopAppBar(
-                title = { Text("Add your ring", color = colors.textPrimary) },
+                title = { Text(stringResource(R.string.pairing_screen_title), color = colors.textPrimary) },
                 navigationIcon = {
                     IconButton(onClick = onDone) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = colors.textPrimary)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back), tint = colors.textPrimary)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = colors.background),
@@ -153,7 +155,7 @@ fun PairingScreen(onDone: () -> Unit, vm: PairingViewModel = hiltViewModel()) {
             ) {
                 item {
                     Text(
-                        "Swipe to find your model, then tap to connect. You can also explore first and pair later.",
+                        stringResource(R.string.pairing_instructions),
                         fontSize = 14.sp,
                         color = colors.textSecondary
                     )
@@ -173,11 +175,11 @@ fun PairingScreen(onDone: () -> Unit, vm: PairingViewModel = hiltViewModel()) {
                                     modifier = Modifier.size(56.dp)
                                 )
                                 Spacer(modifier = Modifier.height(12.dp))
-                                Text("Connected!", fontWeight = FontWeight.SemiBold, fontSize = 20.sp, color = colors.textPrimary)
-                                Text("Your ring is paired and ready.", fontSize = 14.sp, color = colors.textMuted)
+                                Text(stringResource(R.string.pairing_connected_title), fontWeight = FontWeight.SemiBold, fontSize = 20.sp, color = colors.textPrimary)
+                                Text(stringResource(R.string.pairing_connected_message), fontSize = 14.sp, color = colors.textMuted)
                             }
                         }
-                        PrimaryButton(title = "Continue", onClick = onDone)
+                        PrimaryButton(title = stringResource(R.string.action_continue), onClick = onDone)
                     }
                 } else {
                     item {
@@ -197,12 +199,12 @@ fun PairingScreen(onDone: () -> Unit, vm: PairingViewModel = hiltViewModel()) {
                                     Icon(
                                         Icons.AutoMirrored.Filled.BluetoothSearching,
                                         contentDescription = null,
-                                        tint = colors.accent,
+                                        tint = colors.onAccentSoft,
                                         modifier = Modifier.size(40.dp)
                                     )
                                 }
-                                Text("Smart Ring", fontWeight = FontWeight.SemiBold, fontSize = 22.sp, color = colors.textPrimary)
-                                Text("Make sure your ring is nearby and charged.", fontSize = 13.sp, color = colors.textMuted)
+                                Text(stringResource(R.string.pairing_ring_placeholder_title), fontWeight = FontWeight.SemiBold, fontSize = 22.sp, color = colors.textPrimary)
+                                Text(stringResource(R.string.pairing_ring_placeholder_message), fontSize = 13.sp, color = colors.textMuted)
                             }
                         }
                     }
@@ -210,7 +212,7 @@ fun PairingScreen(onDone: () -> Unit, vm: PairingViewModel = hiltViewModel()) {
                     if (!isScanning) {
                         item {
                             PrimaryButton(
-                                title = "Scan for rings",
+                                title = stringResource(R.string.action_scan_for_rings),
                                 onClick = { requestScan() }
                             )
                         }
@@ -228,8 +230,8 @@ fun PairingScreen(onDone: () -> Unit, vm: PairingViewModel = hiltViewModel()) {
                                 )
                                 Text(
                                     when (connectionState) {
-                                        RingConnectionState.CONNECTING, RingConnectionState.RECONNECTING -> "Connecting…"
-                                        else -> "Looking for rings nearby…"
+                                        RingConnectionState.CONNECTING, RingConnectionState.RECONNECTING -> stringResource(R.string.pairing_status_connecting)
+                                        else -> stringResource(R.string.pairing_status_scanning)
                                     },
                                     fontSize = 13.sp,
                                     color = colors.textMuted
@@ -244,8 +246,8 @@ fun PairingScreen(onDone: () -> Unit, vm: PairingViewModel = hiltViewModel()) {
                                         horizontalAlignment = Alignment.CenterHorizontally,
                                         modifier = Modifier.fillMaxWidth().padding(vertical = 20.dp)
                                     ) {
-                                        Text("No rings found yet", fontWeight = FontWeight.Medium, fontSize = 14.sp, color = colors.textPrimary)
-                                        Text("Wake the ring by tapping or moving it, and keep it close.", fontSize = 12.sp, color = colors.textMuted)
+                                        Text(stringResource(R.string.pairing_no_rings_title), fontWeight = FontWeight.Medium, fontSize = 14.sp, color = colors.textPrimary)
+                                        Text(stringResource(R.string.pairing_no_rings_message), fontSize = 12.sp, color = colors.textMuted)
                                     }
                                 }
                             }
@@ -256,7 +258,7 @@ fun PairingScreen(onDone: () -> Unit, vm: PairingViewModel = hiltViewModel()) {
                         }
 
                         item {
-                            SecondaryButton(title = "Stop scanning", onClick = { vm.stopScan() })
+                            SecondaryButton(title = stringResource(R.string.action_stop_scanning), onClick = { vm.stopScan() })
                         }
                     }
                 }

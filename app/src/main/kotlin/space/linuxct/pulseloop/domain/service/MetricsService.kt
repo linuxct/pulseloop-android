@@ -39,14 +39,29 @@ object MetricsService {
         sleepSummary: SleepSummary?,
         sleepBlocks: List<SleepStageBlockEntity>,
         goals: UserGoalEntity?,
-        profile: UserProfileEntity? = null
+        profile: UserProfileEntity? = null,
+        // Blood-pressure / blood-sugar calibration offsets (applied at display time). 0 = uncalibrated.
+        bpCalSystolic: Int = 0,
+        bpCalDiastolic: Int = 0,
+        glucoseOffsetMgdl: Double = 0.0,
+        // Estimated BP/blood-sugar are opt-in: when off, they are hidden from Today (null + empty series).
+        bloodMetricsEnabled: Boolean = false
     ): TodaySummary {
         val todayMs = todayMidnightMs()
         val today = activityRows.filter { it.date <= todayMs }.maxByOrNull { it.date }
         val hrRows   = measurements.filter { it.kindRaw == "hr" }.sortedBy { it.timestamp }
         val spo2Rows = measurements.filter { it.kindRaw == "spo2" }.sortedBy { it.timestamp }
+        val latestBpSys  = measurements.filter { it.kindRaw == "bp_sys" }.maxByOrNull { it.timestamp }
+        val latestBpDia  = measurements.filter { it.kindRaw == "bp_dia" }.maxByOrNull { it.timestamp }
+        val latestGlucose = measurements.filter { it.kindRaw == "glucose" }.maxByOrNull { it.timestamp }
         val hrSamples   = samplesSinceCutoff(hrRows,   MetricRange.TWENTY_FOUR_HOURS)
         val spo2Samples = samplesSinceCutoff(spo2Rows, MetricRange.TWENTY_FOUR_HOURS)
+        val bpSysSamples24h = if (!bloodMetricsEnabled) emptyList() else
+            samplesSinceCutoff(measurements.filter { it.kindRaw == "bp_sys" }.sortedBy { it.timestamp }, MetricRange.TWENTY_FOUR_HOURS)
+                .map { it.copy(value = it.value + bpCalSystolic) }
+        val glucoseSamples24h = if (!bloodMetricsEnabled) emptyList() else
+            samplesSinceCutoff(measurements.filter { it.kindRaw == "glucose" }.sortedBy { it.timestamp }, MetricRange.TWENTY_FOUR_HOURS)
+                .map { it.copy(value = it.value + glucoseOffsetMgdl) }
         val latestHR   = hrRows.lastOrNull()
         val latestSpO2 = spo2Rows.lastOrNull()
         val hrFreshness   = freshness(latestHR?.timestamp)
@@ -58,17 +73,13 @@ object MetricsService {
             calories7d = aligned.map { DailyMetricPoint(it.date, it.calories) },
             distance7d = aligned.map { DailyMetricPoint(it.date, it.distanceMeters) },
             hrSamples24h   = hrSamples.decimateForSparkline(),
-            spo2Samples24h = spo2Samples.decimateForSparkline()
+            spo2Samples24h = spo2Samples.decimateForSparkline(),
+            bpSysSamples24h = bpSysSamples24h.decimateForSparkline(),
+            glucoseSamples24h = glucoseSamples24h.decimateForSparkline()
         )
         val enrichedSleep = sleepSummary?.let { s ->
             if (sleepBlocks.isEmpty()) s
-            else {
-                val light = sleepBlocks.filter { it.stageRaw == "light" }.sumOf { it.durationMinutes }
-                val deep  = sleepBlocks.filter { it.stageRaw == "deep" }.sumOf { it.durationMinutes }
-                val awake = sleepBlocks.filter { it.stageRaw == "awake" }.sumOf { it.durationMinutes }
-                val rem   = sleepBlocks.filter { it.stageRaw == "rem" }.sumOf { it.durationMinutes }
-                s.copy(lightMinutes = light, deepMinutes = deep, awakeMinutes = awake, remMinutes = rem, blocks = sleepBlocks)
-            }
+            else SleepService.summary(s.session, sleepBlocks)
         }
         val metricStates = buildMetricStates(today, enrichedSleep, latestHR, latestSpO2, hrFreshness, spo2Freshness, activityRows, calibration)
         val goalsSummary = goals?.let {
@@ -87,6 +98,10 @@ object MetricsService {
             latestSpO2       = if (isFresh(spo2Freshness)) latestSpO2?.value else null,
             restingHeartRateEstimate = restingHeartRate(hrSamples),
             peakHeartRateToday       = hrSamples.maxOfOrNull { it.value },
+            // Gated on the opt-in: when off, hide BP/sugar from Today even if old rows exist in the DB.
+            latestBloodPressureSystolic  = if (bloodMetricsEnabled) latestBpSys?.value?.plus(bpCalSystolic.toDouble()) else null,
+            latestBloodPressureDiastolic = if (bloodMetricsEnabled) latestBpDia?.value?.plus(bpCalDiastolic.toDouble()) else null,
+            latestBloodSugar             = if (bloodMetricsEnabled) latestGlucose?.value?.plus(glucoseOffsetMgdl) else null,
             sleep          = enrichedSleep,
             batteryPercent = device?.batteryLevel ?: 0,
             deviceState    = device?.stateRaw?.let { r -> RingConnectionState.entries.firstOrNull { it.rawValue == r } } ?: RingConnectionState.IDLE,

@@ -2,13 +2,23 @@ package space.linuxct.pulseloop.coach.tools
 
 import org.json.JSONArray
 import org.json.JSONObject
-import space.linuxct.pulseloop.coach.tools.CoachDataAccess.cutoffMs
+import space.linuxct.pulseloop.coach.tools.CoachDataAccess.CoachRange
+import space.linuxct.pulseloop.coach.tools.CoachDataAccess.MAX_RANGE_DAYS
+import space.linuxct.pulseloop.coach.tools.CoachDataAccess.dayBoundsMs
 import space.linuxct.pulseloop.coach.tools.CoachDataAccess.isoString
+import space.linuxct.pulseloop.coach.tools.CoachDataAccess.localDateString
+import space.linuxct.pulseloop.coach.tools.CoachDataAccess.parseLocalDate
+import space.linuxct.pulseloop.coach.tools.CoachDataAccess.resolveRange
 import space.linuxct.pulseloop.coach.tools.CoachDataAccess.stats
 import kotlin.math.abs
 import kotlin.math.sqrt
 
 object AnalysisTools {
+
+    // Note appended to range-capable analysis tool descriptions.
+    private const val ABS_NOTE =
+        "Window is relative (numeric field) or absolute via start_date/end_date (yyyy-MM-dd, end inclusive); " +
+        "start_date wins when present. Use get_data_availability to learn the stored span."
 
     fun build(): List<CoachTool> = listOf(
         analyzeTrend(),
@@ -21,53 +31,39 @@ object AnalysisTools {
     // ── Specs ──────────────────────────────────────────────────────────────
 
     private const val METRIC_ENUM =
-        """["hr","spo2","hrv","stress","temp","steps","calories","distance","active_minutes"]"""
+        """["hr","spo2","hrv","stress","temp","bp_sys","bp_dia","glucose","fatigue","steps","calories","distance","active_minutes"]"""
 
     private const val SPEC_ANALYZE_TREND =
-        """{"type":"function","name":"analyze_trend","description":"Computes the linear trend (slope, direction, and strength) for a metric over the last N days. Useful for determining whether a metric is improving, declining, or stable.","parameters":{"type":"object","properties":{"metric":{"type":"string","enum":$METRIC_ENUM},"days":{"type":"integer","description":"Number of days to analyse (3–90)"}},"required":["metric","days"],"additionalProperties":false},"strict":true}"""
+        """{"type":"function","name":"analyze_trend","description":"Computes the linear trend (slope, direction, and strength) for a metric over a relative or absolute window. Useful for determining whether a metric is improving, declining, or stable. $ABS_NOTE","parameters":{"type":"object","properties":{"metric":{"type":"string","enum":$METRIC_ENUM},"days":{"type":["integer","null"],"description":"Relative days to analyse. Null when using start_date/end_date."},"start_date":{"type":["string","null"],"description":"Absolute window start, yyyy-MM-dd. Null to use 'days'."},"end_date":{"type":["string","null"],"description":"Absolute window end (inclusive), yyyy-MM-dd. Null means today."}},"required":["metric","days","start_date","end_date"],"additionalProperties":false},"strict":true}"""
 
     private const val SPEC_COMPARE_PERIODS =
-        """{"type":"function","name":"compare_periods","description":"Compares the average of a metric between two consecutive time periods of equal length. Returns the absolute and relative change.","parameters":{"type":"object","properties":{"metric":{"type":"string","enum":$METRIC_ENUM},"period_days":{"type":"integer","description":"Length in days of each period (1–45). The most recent period is compared against the period immediately before it."}},"required":["metric","period_days"],"additionalProperties":false},"strict":true}"""
+        """{"type":"function","name":"compare_periods","description":"Compares the average of a metric between two consecutive time periods of equal length. The recent period ends at end_date (or today) and is compared against the period immediately before it. Returns the absolute and relative change.","parameters":{"type":"object","properties":{"metric":{"type":"string","enum":$METRIC_ENUM},"period_days":{"type":["integer","null"],"description":"Length in days of each period (default 7). The two periods are back-to-back."},"end_date":{"type":["string","null"],"description":"The date the most recent period ends on, yyyy-MM-dd. Null means today — use this to compare two historic periods."}},"required":["metric","period_days","end_date"],"additionalProperties":false},"strict":true}"""
 
     private const val SPEC_COMPUTE_CORRELATION =
-        """{"type":"function","name":"compute_correlation","description":"Calculates the Pearson correlation between two daily metrics over the last N days.","parameters":{"type":"object","properties":{"metric_a":{"type":"string","enum":$METRIC_ENUM},"metric_b":{"type":"string","enum":$METRIC_ENUM},"days":{"type":"integer","description":"Number of days (7–90)"}},"required":["metric_a","metric_b","days"],"additionalProperties":false},"strict":true}"""
+        """{"type":"function","name":"compute_correlation","description":"Calculates the Pearson correlation between two daily metrics over a relative or absolute window. $ABS_NOTE","parameters":{"type":"object","properties":{"metric_a":{"type":"string","enum":$METRIC_ENUM},"metric_b":{"type":"string","enum":$METRIC_ENUM},"days":{"type":["integer","null"],"description":"Relative number of days. Null when using start_date/end_date."},"start_date":{"type":["string","null"],"description":"Absolute window start, yyyy-MM-dd. Null to use 'days'."},"end_date":{"type":["string","null"],"description":"Absolute window end (inclusive), yyyy-MM-dd. Null means today."}},"required":["metric_a","metric_b","days","start_date","end_date"],"additionalProperties":false},"strict":true}"""
 
     private const val SPEC_DETECT_OUTLIERS =
-        """{"type":"function","name":"detect_outliers","description":"Finds readings that are unusually high or low (beyond a standard-deviation threshold) for a metric.","parameters":{"type":"object","properties":{"metric":{"type":"string","enum":$METRIC_ENUM},"days":{"type":"integer","description":"Number of days to search (1–90)"},"sigma":{"type":"number","description":"Standard deviations from mean to flag as outlier (1.5–4). Use 2.0 as a sensible default."}},"required":["metric","days","sigma"],"additionalProperties":false},"strict":true}"""
+        """{"type":"function","name":"detect_outliers","description":"Finds readings that are unusually high or low (beyond a standard-deviation threshold) for a metric over a relative or absolute window. $ABS_NOTE","parameters":{"type":"object","properties":{"metric":{"type":"string","enum":$METRIC_ENUM},"days":{"type":["integer","null"],"description":"Relative number of days to search. Null when using start_date/end_date."},"start_date":{"type":["string","null"],"description":"Absolute window start, yyyy-MM-dd. Null to use 'days'."},"end_date":{"type":["string","null"],"description":"Absolute window end (inclusive), yyyy-MM-dd. Null means today."},"sigma":{"type":"number","description":"Standard deviations from mean to flag as outlier (1.5–4). Use 2.0 as a sensible default."}},"required":["metric","days","start_date","end_date","sigma"],"additionalProperties":false},"strict":true}"""
 
     private const val SPEC_SUMMARIZE_DISTRIBUTION =
-        """{"type":"function","name":"summarize_distribution","description":"Returns percentile-based distribution statistics for a metric over the last N days.","parameters":{"type":"object","properties":{"metric":{"type":"string","enum":$METRIC_ENUM},"days":{"type":"integer","description":"Number of days (1–90)"}},"required":["metric","days"],"additionalProperties":false},"strict":true}"""
+        """{"type":"function","name":"summarize_distribution","description":"Returns percentile-based distribution statistics for a metric over a relative or absolute window. $ABS_NOTE","parameters":{"type":"object","properties":{"metric":{"type":"string","enum":$METRIC_ENUM},"days":{"type":["integer","null"],"description":"Relative number of days. Null when using start_date/end_date."},"start_date":{"type":["string","null"],"description":"Absolute window start, yyyy-MM-dd. Null to use 'days'."},"end_date":{"type":["string","null"],"description":"Absolute window end (inclusive), yyyy-MM-dd. Null means today."}},"required":["metric","days","start_date","end_date"],"additionalProperties":false},"strict":true}"""
 
     // ── Handlers ───────────────────────────────────────────────────────────
 
-    private suspend fun metricValues(metric: String, daysBack: Int, ctx: ToolContext): List<Double> {
-        val cutoff = cutoffMs(daysBack)
-        return when (metric) {
-            "hr"             -> ctx.measurementDao.getByKindSince("hr", cutoff).map { it.value }
-            "spo2"           -> ctx.measurementDao.getByKindSince("spo2", cutoff).map { it.value }
-            "hrv"            -> ctx.measurementDao.getByKindSince("hrv", cutoff).map { it.value }
-            "stress"         -> ctx.measurementDao.getByKindSince("stress", cutoff).map { it.value }
-            "temp"           -> ctx.measurementDao.getByKindSince("temp", cutoff).map { it.value }
-            "steps"          -> ctx.activityDailyDao.getSince(cutoff).sortedBy { it.date }.map { it.steps.toDouble() }
-            "calories"       -> ctx.activityDailyDao.getSince(cutoff).sortedBy { it.date }.map { it.calories }
-            "distance"       -> ctx.activityDailyDao.getSince(cutoff).sortedBy { it.date }.map { it.distanceMeters }
-            "active_minutes" -> ctx.activityDailyDao.getSince(cutoff).sortedBy { it.date }.map { it.activeMinutes.toDouble() }
-            else -> emptyList()
-        }
-    }
+    private suspend fun metricValues(metric: String, range: CoachRange, ctx: ToolContext): List<Double> =
+        metricSeries(metric, range, ctx).map { it.second }
 
-    private suspend fun metricSeries(metric: String, daysBack: Int, ctx: ToolContext): List<Pair<Long, Double>> {
-        val cutoff = cutoffMs(daysBack)
+    private suspend fun metricSeries(metric: String, range: CoachRange, ctx: ToolContext): List<Pair<Long, Double>> {
+        val s = range.startMs; val e = range.endMs
+        // Backstop: estimated BP/blood-sugar are invisible to analysis tools when the feature is off.
+        if (!ctx.bloodMetricsEnabled && metric in setOf("bp_sys", "bp_dia", "glucose")) return emptyList()
         return when (metric) {
-            "hr"             -> ctx.measurementDao.getByKindSince("hr", cutoff).sortedBy { it.timestamp }.map { it.timestamp to it.value }
-            "spo2"           -> ctx.measurementDao.getByKindSince("spo2", cutoff).sortedBy { it.timestamp }.map { it.timestamp to it.value }
-            "hrv"            -> ctx.measurementDao.getByKindSince("hrv", cutoff).sortedBy { it.timestamp }.map { it.timestamp to it.value }
-            "stress"         -> ctx.measurementDao.getByKindSince("stress", cutoff).sortedBy { it.timestamp }.map { it.timestamp to it.value }
-            "temp"           -> ctx.measurementDao.getByKindSince("temp", cutoff).sortedBy { it.timestamp }.map { it.timestamp to it.value }
-            "steps"          -> ctx.activityDailyDao.getSince(cutoff).sortedBy { it.date }.map { it.date to it.steps.toDouble() }
-            "calories"       -> ctx.activityDailyDao.getSince(cutoff).sortedBy { it.date }.map { it.date to it.calories }
-            "distance"       -> ctx.activityDailyDao.getSince(cutoff).sortedBy { it.date }.map { it.date to it.distanceMeters }
-            "active_minutes" -> ctx.activityDailyDao.getSince(cutoff).sortedBy { it.date }.map { it.date to it.activeMinutes.toDouble() }
+            "hr", "spo2", "hrv", "stress", "temp", "bp_sys", "bp_dia", "glucose", "fatigue" ->
+                ctx.measurementDao.getByKindBetween(metric, s, e).sortedBy { it.timestamp }.map { it.timestamp to it.value }
+            "steps"          -> ctx.activityDailyDao.getBetween(s, e).sortedBy { it.date }.map { it.date to it.steps.toDouble() }
+            "calories"       -> ctx.activityDailyDao.getBetween(s, e).sortedBy { it.date }.map { it.date to it.calories }
+            "distance"       -> ctx.activityDailyDao.getBetween(s, e).sortedBy { it.date }.map { it.date to it.distanceMeters }
+            "active_minutes" -> ctx.activityDailyDao.getBetween(s, e).sortedBy { it.date }.map { it.date to it.activeMinutes.toDouble() }
             else -> emptyList()
         }
     }
@@ -104,8 +100,8 @@ object AnalysisTools {
         run = { args, ctx ->
             val o      = JSONObject(args)
             val metric = o.optString("metric", "hr")
-            val days   = o.optInt("days", 7).coerceIn(3, 90)
-            val series = metricSeries(metric, days, ctx)
+            val range  = resolveRange(o, "days", 14)
+            val series = metricSeries(metric, range, ctx)
             val values = series.map { it.second }
 
             val slope = linearSlope(values)
@@ -118,7 +114,7 @@ object AnalysisTools {
 
             val obj = JSONObject().apply {
                 put("metric",    metric)
-                put("days",      days)
+                put("range",     range.label)
                 put("samples",   values.size)
                 put("slope_per_day", slope)
                 put("direction", direction)
@@ -136,12 +132,21 @@ object AnalysisTools {
         run = { args, ctx ->
             val o      = JSONObject(args)
             val metric = o.optString("metric", "steps")
-            val pDays  = o.optInt("period_days", 7).coerceIn(1, 45)
+            val pDays  = (if (!o.isNull("period_days")) o.optInt("period_days", 7) else 7)
+                .coerceIn(1, MAX_RANGE_DAYS / 2)
 
-            val fullSeries   = metricSeries(metric, pDays * 2, ctx)
-            val half         = fullSeries.size / 2
-            val priorVals    = fullSeries.take(half).map { it.second }
-            val recentVals   = fullSeries.drop(half).map { it.second }
+            val anchorEnd = if (!o.isNull("end_date") && o.optString("end_date").isNotBlank())
+                dayBoundsMs(parseLocalDate(o.optString("end_date"))).second
+            else System.currentTimeMillis()
+
+            val periodMs   = pDays * 86_400_000L
+            val midpoint   = anchorEnd - periodMs
+            val fullStart  = anchorEnd - 2 * periodMs
+            val fullRange  = CoachRange(fullStart, anchorEnd, "")
+            val fullSeries = metricSeries(metric, fullRange, ctx)
+
+            val priorVals  = fullSeries.filter { it.first < midpoint }.map { it.second }
+            val recentVals = fullSeries.filter { it.first >= midpoint }.map { it.second }
 
             val recentAvg = if (recentVals.isEmpty()) 0.0 else recentVals.average()
             val priorAvg  = if (priorVals.isEmpty()) 0.0 else priorVals.average()
@@ -151,6 +156,8 @@ object AnalysisTools {
             val obj = JSONObject().apply {
                 put("metric",          metric)
                 put("period_days",     pDays)
+                put("recent_period",   "${localDateString(midpoint)} → ${localDateString(anchorEnd)}")
+                put("prior_period",    "${localDateString(fullStart)} → ${localDateString(midpoint)}")
                 put("recent_avg",      recentAvg)
                 put("prior_avg",       priorAvg)
                 put("absolute_change", change)
@@ -170,10 +177,10 @@ object AnalysisTools {
             val o       = JSONObject(args)
             val metricA = o.optString("metric_a", "steps")
             val metricB = o.optString("metric_b", "hr")
-            val days    = o.optInt("days", 14).coerceIn(7, 90)
+            val range   = resolveRange(o, "days", 14)
 
-            val seriesA = metricSeries(metricA, days, ctx)
-            val seriesB = metricSeries(metricB, days, ctx)
+            val seriesA = metricSeries(metricA, range, ctx)
+            val seriesB = metricSeries(metricB, range, ctx)
 
             val aVals = seriesA.map { it.second }
             val bVals = seriesB.map { it.second }
@@ -189,7 +196,7 @@ object AnalysisTools {
             val obj = JSONObject().apply {
                 put("metric_a",        metricA)
                 put("metric_b",        metricB)
-                put("days",            days)
+                put("range",           range.label)
                 put("correlation",     corr)
                 put("strength",        strength)
                 put("direction",       if (corr >= 0) "positive" else "negative")
@@ -206,10 +213,10 @@ object AnalysisTools {
         run = { args, ctx ->
             val o      = JSONObject(args)
             val metric = o.optString("metric", "hr")
-            val days   = o.optInt("days", 7).coerceIn(1, 90)
+            val range  = resolveRange(o, "days", 14)
             val sigma  = o.optDouble("sigma", 2.0).coerceIn(1.5, 4.0)
 
-            val series = metricSeries(metric, days, ctx)
+            val series = metricSeries(metric, range, ctx)
             val values = series.map { it.second }
             if (values.isEmpty()) {
                 return@CoachTool ToolResult.success(JSONObject().put("outliers", JSONArray()).put("count", 0))
@@ -232,7 +239,7 @@ object AnalysisTools {
 
             val obj = JSONObject().apply {
                 put("metric",       metric)
-                put("days",         days)
+                put("range",        range.label)
                 put("sigma",        sigma)
                 put("mean",         mean)
                 put("std_dev",      sd)
@@ -250,11 +257,11 @@ object AnalysisTools {
         run = { args, ctx ->
             val o      = JSONObject(args)
             val metric = o.optString("metric", "hr")
-            val days   = o.optInt("days", 7).coerceIn(1, 90)
-            val values = metricValues(metric, days, ctx)
+            val range  = resolveRange(o, "days", 14)
+            val values = metricValues(metric, range, ctx)
 
             if (values.isEmpty()) {
-                return@CoachTool ToolResult.success(JSONObject().put("error", "No data for $metric in last $days days"))
+                return@CoachTool ToolResult.success(JSONObject().put("error", "No data for $metric in ${range.label}"))
             }
 
             val sorted = values.sorted()
@@ -264,7 +271,7 @@ object AnalysisTools {
 
             val obj = JSONObject().apply {
                 put("metric",  metric)
-                put("days",    days)
+                put("range",   range.label)
                 put("count",   values.size)
                 put("min",     sorted.first())
                 put("p10",     p(10.0))

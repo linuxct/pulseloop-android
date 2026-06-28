@@ -57,7 +57,10 @@ data class TrendsSummary(
     val calories7d: List<DailyMetricPoint>,
     val distance7d: List<DailyMetricPoint>,
     val hrSamples24h: List<MetricSample>,
-    val spo2Samples24h: List<MetricSample>
+    val spo2Samples24h: List<MetricSample>,
+    // Sparkline series for the Today tiles (systolic for BP). Empty when the metric is opt-out.
+    val bpSysSamples24h: List<MetricSample> = emptyList(),
+    val glucoseSamples24h: List<MetricSample> = emptyList()
 )
 
 data class TimelineEvent(
@@ -88,6 +91,10 @@ data class TodaySummary(
     val latestSpO2: Double?,
     val restingHeartRateEstimate: Double?,
     val peakHeartRateToday: Double?,
+    // Jring combined-measurement spot metrics (calibration offsets already applied). Null when unmeasured.
+    val latestBloodPressureSystolic: Double? = null,
+    val latestBloodPressureDiastolic: Double? = null,
+    val latestBloodSugar: Double? = null,
     val sleep: SleepSummary?,
     val batteryPercent: Int,
     val deviceState: RingConnectionState,
@@ -147,3 +154,28 @@ data class ActivitySessionSummary(
 )
 
 data class ActiveMinutesResult(val minutes: Int, val source: String)
+
+// ─── Vitals history aggregates ────────────────────────────────────────────────
+
+enum class VitalsRangeKey { DAY, WEEK, MONTH, YEAR }
+
+data class VitalsBar(
+    val label: String,
+    val avgValue: Double?,
+    val minValue: Double?,
+    val maxValue: Double?,
+    val present: Boolean
+)
+
+// ─── Activity history aggregates ─────────────────────────────────────────────
+
+enum class ActivityRangeKey { DAY, WEEK, MONTH, YEAR }
+
+data class ActivityBar(
+    val label: String,
+    val steps: Int?,
+    val calories: Double?,
+    val distanceMeters: Double?,
+    val activeMinutes: Int?,
+    val present: Boolean
+)

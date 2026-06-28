@@ -75,3 +75,22 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
         )
     }
 }
+
+val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // New table: per-data-type cursors for the OTLP exporter.
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `otlp_export_state` (
+                `dataType` TEXT NOT NULL,
+                `lastTimestampMs` INTEGER NOT NULL,
+                `backfillCursorMs` INTEGER NOT NULL,
+                `exportedCount` INTEGER NOT NULL,
+                `lastError` TEXT,
+                `updatedAt` INTEGER NOT NULL,
+                PRIMARY KEY(`dataType`)
+            )
+            """.trimIndent()
+        )
+    }
+}

@@ -10,7 +10,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import space.linuxct.pulseloop.R
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.rememberVicoScrollState
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberAxisLabelComponent
@@ -53,7 +55,7 @@ fun StepsBarChart(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = "No data",
+                text = stringResource(R.string.chart_empty_no_data),
                 color = colors.textMuted,
                 style = MaterialTheme.typography.bodySmall,
             )

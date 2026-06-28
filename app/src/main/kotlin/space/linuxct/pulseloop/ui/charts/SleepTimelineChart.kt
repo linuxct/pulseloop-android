@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.input.pointer.pointerInput
@@ -32,28 +33,26 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import space.linuxct.pulseloop.R
 import space.linuxct.pulseloop.data.db.entities.SleepStageBlockEntity
 import space.linuxct.pulseloop.domain.model.SleepStage
 import space.linuxct.pulseloop.domain.model.SleepSummary
 import space.linuxct.pulseloop.ui.theme.LocalPulseColors
+import space.linuxct.pulseloop.ui.theme.LocalUiMode
+import space.linuxct.pulseloop.ui.theme.PulseColors
+import space.linuxct.pulseloop.ui.theme.UiMode
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
-// Sleep-stage palette matching the iOS SleepStageColors (Charts.swift)
-private val SleepDeepColor  = Color(0xFF3F2DD8)
-private val SleepLightColor = Color(0xFF7C5CFF)
-private val SleepRemColor   = Color(0xFF2DD4D8)
-private val SleepAwakeColor = Color(0xFFFFB86B)
-
-private fun sleepStageColor(stage: SleepStage): Color = when (stage) {
-    SleepStage.DEEP    -> SleepDeepColor
-    SleepStage.LIGHT   -> SleepLightColor
-    SleepStage.REM     -> SleepRemColor
-    SleepStage.AWAKE   -> SleepAwakeColor
-    SleepStage.UNKNOWN -> Color(0xFF6F7A8C)
+private fun sleepStageColor(stage: SleepStage, colors: PulseColors): Color = when (stage) {
+    SleepStage.DEEP    -> colors.sleepDeep
+    SleepStage.LIGHT   -> colors.sleepLight
+    SleepStage.REM     -> colors.sleepRem
+    SleepStage.AWAKE   -> colors.sleepAwake
+    SleepStage.UNKNOWN -> colors.sleepUnknown
 }
 
 // Lane positions as fractions of canvas height (top → bottom: awake, rem, light, deep)
@@ -104,6 +103,7 @@ fun SleepTimelineChart(
     height: Int = 210,
 ) {
     val colors = LocalPulseColors.current
+    val isMyMode = LocalUiMode.current == UiMode.MATERIAL_YOU
     val chartBg       = colors.cardSoft
     val borderColor   = colors.borderSubtle
     val connectorColor = colors.accent.copy(alpha = 0.35f)
@@ -120,7 +120,7 @@ fun SleepTimelineChart(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = "No sleep data",
+                text = stringResource(R.string.chart_empty_no_sleep_data),
                 color = colors.textMuted,
                 style = MaterialTheme.typography.bodySmall,
             )
@@ -225,7 +225,7 @@ fun SleepTimelineChart(
                 sleepLaneOrder.forEachIndexed { i, stage ->
                     Text(
                         text = stage.rawValue.uppercase(),
-                        color = sleepStageColor(stage),
+                        color = sleepStageColor(stage, colors),
                         style = MaterialTheme.typography.labelSmall,
                         modifier = if (i < sleepLaneOrder.lastIndex)
                             Modifier.weight(1f) else Modifier,
@@ -271,7 +271,7 @@ fun SleepTimelineChart(
                     val y      = yForStage(stage)
                     val startX = xForMin(startMin)
                     val endX   = xForMin(startMin + durationMin).coerceAtLeast(startX)
-                    val color  = sleepStageColor(stage)
+                    val color  = sleepStageColor(stage, colors)
                     val isSelected = selectedBlock?.let {
                         it.stage == stage && it.startMs == sessionStart + startMin * 60_000L
                     } == true
@@ -313,13 +313,13 @@ fun SleepTimelineChart(
                             )
                             IntOffset(clampedX.roundToInt(), 8.dp.toPx().roundToInt())
                         }
-                        .background(Color(0xEE0D1220), RoundedCornerShape(8.dp))
+                        .background(if (isMyMode) colors.tooltipBackground else Color(0xEE0D1220), RoundedCornerShape(8.dp))
                         .border(1.dp, colors.accent.copy(alpha = 0.45f), RoundedCornerShape(8.dp))
                         .padding(horizontal = 10.dp, vertical = 6.dp)
                 ) {
                     Text(
                         text = tooltipText,
-                        color = Color.White,
+                        color = colors.tooltipText,
                         style = MaterialTheme.typography.labelSmall,
                         maxLines = 1,
                     )

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -33,15 +34,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import space.linuxct.pulseloop.R
 import space.linuxct.pulseloop.data.db.entities.RawPacketRowEntity
 import space.linuxct.pulseloop.data.db.entities.WearableLogEntity
 import space.linuxct.pulseloop.ui.components.PulseCard
 import space.linuxct.pulseloop.ui.theme.LocalPulseColors
+import space.linuxct.pulseloop.ui.theme.LocalUiMode
+import space.linuxct.pulseloop.ui.theme.UiMode
 import space.linuxct.pulseloop.ui.viewmodel.DebugViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -50,6 +55,7 @@ import java.util.Locale
 @Composable
 fun DebugScreen(vm: DebugViewModel = hiltViewModel()) {
     val colors = LocalPulseColors.current
+    val uiMode = LocalUiMode.current
     val state by vm.uiState.collectAsState()
     var selectedTab by remember { mutableStateOf(0) }
     val shareLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {}
@@ -59,30 +65,32 @@ fun DebugScreen(vm: DebugViewModel = hiltViewModel()) {
             .fillMaxSize()
             .background(colors.background)
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize().then(
+            if (uiMode == UiMode.MATERIAL_YOU) Modifier.statusBarsPadding() else Modifier
+        )) {
             // Connection status bar
             PulseCard(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("DEBUG", fontSize = 11.sp, fontWeight = FontWeight.Medium, color = colors.textMuted, letterSpacing = 1.4.sp)
+                    Text(stringResource(R.string.debug_section_header), fontSize = 11.sp, fontWeight = FontWeight.Medium, color = colors.textMuted, letterSpacing = 1.4.sp)
                     Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                        Text("BLE State", fontSize = 13.sp, color = colors.textSecondary)
+                        Text(stringResource(R.string.debug_ble_state_label), fontSize = 13.sp, color = colors.textSecondary)
                         Text(state.connectionState.rawValue.replaceFirstChar { it.uppercase() }, fontSize = 13.sp, color = colors.textPrimary, fontWeight = FontWeight.Medium)
                     }
                     state.deviceName?.let { name ->
                         Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                            Text("Device", fontSize = 13.sp, color = colors.textSecondary)
+                            Text(stringResource(R.string.debug_device_label), fontSize = 13.sp, color = colors.textSecondary)
                             Text(name, fontSize = 13.sp, color = colors.textPrimary)
                         }
                     }
                     state.deviceAddress?.let { address ->
                         Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                            Text("Address", fontSize = 13.sp, color = colors.textSecondary)
+                            Text(stringResource(R.string.debug_address_label), fontSize = 13.sp, color = colors.textSecondary)
                             Text(address, fontSize = 13.sp, color = colors.textPrimary, fontFamily = FontFamily.Monospace)
                         }
                     }
                     if (state.batteryPercent != null) {
                         Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                            Text("Battery", fontSize = 13.sp, color = colors.textSecondary)
+                            Text(stringResource(R.string.debug_battery_label), fontSize = 13.sp, color = colors.textSecondary)
                             Text("${state.batteryPercent}%", fontSize = 13.sp, color = colors.textPrimary)
                         }
                     }
@@ -95,10 +103,10 @@ fun DebugScreen(vm: DebugViewModel = hiltViewModel()) {
                 contentColor = colors.accent
             ) {
                 Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }) {
-                    Text("Packets (${state.packets.size})", modifier = Modifier.padding(vertical = 12.dp), fontSize = 13.sp)
+                    Text(stringResource(R.string.debug_tab_packets, state.packets.size), modifier = Modifier.padding(vertical = 12.dp), fontSize = 13.sp)
                 }
                 Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }) {
-                    Text("Logs (${state.logs.size})", modifier = Modifier.padding(vertical = 12.dp), fontSize = 13.sp)
+                    Text(stringResource(R.string.debug_tab_logs, state.logs.size), modifier = Modifier.padding(vertical = 12.dp), fontSize = 13.sp)
                 }
             }
 
@@ -121,13 +129,13 @@ fun DebugScreen(vm: DebugViewModel = hiltViewModel()) {
                 onClick = { vm.exportFullDump { shareLauncher.launch(it) } },
                 containerColor = colors.accent
             ) {
-                Icon(Icons.Default.BugReport, contentDescription = "Full debug dump (ZIP)", tint = Color.White)
+                Icon(Icons.Default.BugReport, contentDescription = stringResource(R.string.cd_debug_export), tint = Color.White)
             }
             FloatingActionButton(
                 onClick = { vm.clearAll() },
                 containerColor = colors.danger
             ) {
-                Icon(Icons.Default.DeleteSweep, contentDescription = "Clear all debug data", tint = Color.White)
+                Icon(Icons.Default.DeleteSweep, contentDescription = stringResource(R.string.cd_debug_clear), tint = Color.White)
             }
         }
     }
@@ -145,7 +153,7 @@ private fun PacketList(packets: List<RawPacketRowEntity>) {
     ) {
         if (packets.isEmpty()) {
             item {
-                Text("No packets captured yet.", fontSize = 13.sp, color = colors.textMuted, modifier = Modifier.padding(16.dp))
+                Text(stringResource(R.string.debug_no_packets), fontSize = 13.sp, color = colors.textMuted, modifier = Modifier.padding(16.dp))
             }
         }
         items(packets.size) { i ->
@@ -178,7 +186,7 @@ private fun LogList(logs: List<WearableLogEntity>) {
     ) {
         if (logs.isEmpty()) {
             item {
-                Text("No log entries yet.", fontSize = 13.sp, color = colors.textMuted, modifier = Modifier.padding(16.dp))
+                Text(stringResource(R.string.debug_no_logs), fontSize = 13.sp, color = colors.textMuted, modifier = Modifier.padding(16.dp))
             }
         }
         items(logs.size) { i ->

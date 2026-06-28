@@ -21,6 +21,7 @@ import javax.inject.Inject
 
 data class SleepUiState(
     val range: SleepRangeKey = SleepRangeKey.DAY,
+    val selectedDate: Long? = null,
     val rangeSummary: SleepRangeSummary? = null,
     val goalMinutes: Int? = null,
     val bars: List<SleepBar> = emptyList()
@@ -33,16 +34,27 @@ class SleepViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _range = MutableStateFlow(SleepRangeKey.DAY)
+    private val _selectedDate = MutableStateFlow<Long?>(null)
     val range: StateFlow<SleepRangeKey> = _range.asStateFlow()
 
     val uiState: StateFlow<SleepUiState> = combine(
         sleepRepo.observeSessions(),
         profileRepo.observeGoals(),
-        _range
-    ) { sessions, goals, range ->
+        combine(_range, _selectedDate) { r, d -> Pair(r, d) }
+    ) { sessions, goals, (range, selectedDate) ->
         val blocks = sessions.flatMap { s -> sleepRepo.getBlocksForSession(s.id) }
         val blocksMap = blocks.groupBy { it.sessionId }
-        val rangeSummary = SleepService.sleepRange(range, sessions, blocksMap)
+        val rangeSummary = if (selectedDate != null && range == SleepRangeKey.DAY) {
+            val anchor = SleepService.dayReferenceNight(selectedDate + 12L * 3_600_000L)
+            val startMs = anchor
+            val endMs = anchor + 86_400_000L - 1L
+            val summaries = sessions.filter { it.startAt in startMs..endMs }.map { session ->
+                SleepService.summary(session, blocksMap[session.id] ?: emptyList(), includeStages = true)
+            }
+            SleepRangeSummary(range = SleepRangeKey.DAY, start = startMs, end = anchor, expectedNights = 1, sessions = summaries)
+        } else {
+            SleepService.sleepRange(range, sessions, blocksMap)
+        }
         val goalMin = goals?.sleepMinutes
 
         val bars = if (range == SleepRangeKey.YEAR) {
@@ -53,13 +65,13 @@ class SleepViewModel @Inject constructor(
 
         SleepUiState(
             range = range,
+            selectedDate = selectedDate,
             rangeSummary = rangeSummary,
             goalMinutes = goalMin,
             bars = bars
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SleepUiState())
 
-    fun setRange(range: SleepRangeKey) {
-        _range.value = range
-    }
+    fun setRange(range: SleepRangeKey) { _range.value = range }
+    fun setSelectedDate(dateMs: Long?) { _selectedDate.value = dateMs }
 }

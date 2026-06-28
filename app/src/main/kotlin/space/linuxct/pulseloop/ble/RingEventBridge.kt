@@ -44,7 +44,9 @@ object RingEventBridge {
             listOf(PulseEvent.SyncProgress("done"))
         is RingDecodedEvent.Battery ->
             listOf(PulseEvent.BatteryLevel(decoded.percent))
-        is RingDecodedEvent.Status, is RingDecodedEvent.TimeSyncAck,
+        is RingDecodedEvent.Status ->
+            decoded.firmware?.let { listOf(PulseEvent.FirmwareVersion(it)) } ?: emptyList()
+        is RingDecodedEvent.TimeSyncAck,
         is RingDecodedEvent.CommandAck, is RingDecodedEvent.Unknown -> emptyList()
     }
 }

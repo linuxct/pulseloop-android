@@ -19,6 +19,7 @@ import space.linuxct.pulseloop.data.datastore.AppPreferencesDataStore
 import space.linuxct.pulseloop.data.db.dao.ActivityDailyDao
 import space.linuxct.pulseloop.data.db.dao.ActivitySessionDao
 import space.linuxct.pulseloop.data.db.dao.CoachDao
+import space.linuxct.pulseloop.data.db.dao.DeviceDao
 import space.linuxct.pulseloop.data.db.dao.MeasurementDao
 import space.linuxct.pulseloop.data.db.dao.ProfileDao
 import space.linuxct.pulseloop.data.db.dao.SleepDao
@@ -55,6 +56,7 @@ class CoachViewModel @Inject constructor(
     private val sleepDao: SleepDao,
     private val activitySessionDao: ActivitySessionDao,
     private val profileDao: ProfileDao,
+    private val deviceDao: DeviceDao,
     private val prefs: AppPreferencesDataStore
 ) : ViewModel() {
 
@@ -62,7 +64,7 @@ class CoachViewModel @Inject constructor(
     val uiState: StateFlow<CoachUiState> = _uiState
 
     private val toolCtx: ToolContext by lazy {
-        ToolContext(measurementDao, activityDailyDao, sleepDao, activitySessionDao, profileDao, coachDao)
+        ToolContext(measurementDao, activityDailyDao, sleepDao, activitySessionDao, profileDao, coachDao, deviceDao)
     }
 
     private var messagesJob: Job? = null
@@ -135,24 +137,29 @@ class CoachViewModel @Inject constructor(
 
             val profile     = profileDao.getProfile()
             val goals       = profileDao.getGoals()
-            val contextJson = CoachPromptBuilder.buildContext(profile, goals)
+            val memories    = coachDao.getAllMemories()
+            val contextJson = CoachPromptBuilder.buildContext(profile, goals, memories)
             val history     = coachDao.getRecentMessages(convId, 12).reversed()
                 .filter { it.roleRaw == "user" || it.roleRaw == "assistant" }
 
             val isOAuth  = !prefs.openAiRefreshToken.first().isNullOrBlank()
             val client   = if (isOAuth) OpenAIClient.forOAuth(apiKey) else OpenAIClient(apiKey)
             val model    = prefs.coachModel.first()
+            // Estimated BP/blood-sugar are opt-in: when off, the coach's tools and prompt must not
+            // mention or expose them. Thread the live flag through the per-turn tool context.
+            val bloodEnabled = prefs.bloodMetricsEnabled.first()
+            val ctx = toolCtx.copy(bloodMetricsEnabled = bloodEnabled)
             val orchestrator = CoachOrchestrator(
                 client   = client,
-                tools    = ToolRegistry.build(toolCtx),
-                toolCtx  = toolCtx,
+                tools    = ToolRegistry.build(ctx),
+                toolCtx  = ctx,
                 model    = model,
                 onTrace  = { event -> _uiState.update { it.copy(traceEvents = it.traceEvents + event) } }
             )
 
             val result = try {
                 orchestrator.runTurn(
-                    systemPrompt        = CoachPromptBuilder.systemPrompt,
+                    systemPrompt        = CoachPromptBuilder.systemPrompt(bloodEnabled),
                     developerMessage    = CoachPromptBuilder.buildDeveloperMessage(contextJson),
                     userText            = userText,
                     conversationHistory = history,

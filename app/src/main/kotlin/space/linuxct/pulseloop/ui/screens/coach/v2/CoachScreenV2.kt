@@ -1,0 +1,365 @@
+package space.linuxct.pulseloop.ui.screens.coach.v2
+
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.AddComment
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SuggestionChip
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import kotlinx.coroutines.launch
+import space.linuxct.pulseloop.R
+import space.linuxct.pulseloop.ui.charts.CoachChartCard
+import space.linuxct.pulseloop.ui.components.PulseCard
+import space.linuxct.pulseloop.ui.navigation.LocalBottomNavHeight
+import space.linuxct.pulseloop.ui.navigation.NavRoute
+import space.linuxct.pulseloop.ui.screens.coach.extractJsonField
+import space.linuxct.pulseloop.ui.viewmodel.CoachMessageUi
+import space.linuxct.pulseloop.ui.viewmodel.CoachViewModel
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+internal fun CoachScreenV2(navController: NavController, vm: CoachViewModel) {
+    val scheme  = MaterialTheme.colorScheme
+    val state   by vm.uiState.collectAsState()
+    val haptic  = LocalHapticFeedback.current
+    val scope   = rememberCoroutineScope()
+    val listState = rememberLazyListState()
+    val snackbar  = remember { SnackbarHostState() }
+    val bottomNavHeight = LocalBottomNavHeight.current
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val bottomNavPx = with(density) { bottomNavHeight.roundToPx() }
+    val contentInsets = WindowInsets.ime.union(WindowInsets(0, 0, 0, bottomNavPx))
+
+    var inputText by remember { mutableStateOf("") }
+    var showClearDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(state.messages.size, state.isLoading) {
+        when {
+            state.isLoading -> listState.animateScrollToItem(maxOf(0, state.messages.size))
+            state.messages.isNotEmpty() -> listState.animateScrollToItem(state.messages.size - 1)
+        }
+    }
+
+    LaunchedEffect(state.error) {
+        state.error?.let { msg ->
+            scope.launch { snackbar.showSnackbar(msg) }
+            vm.clearError()
+        }
+    }
+
+    fun sendMessage() {
+        val text = inputText.trim()
+        if (text.isBlank() || state.isLoading) return
+        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        vm.send(text)
+        inputText = ""
+    }
+
+    Box(modifier = Modifier.fillMaxSize().background(scheme.background)) {
+        Column(modifier = Modifier.fillMaxSize().windowInsetsPadding(contentInsets)) {
+            Row(
+                modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(start = 20.dp, end = 12.dp, top = 16.dp, bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.size(32.dp).clip(CircleShape)
+                        .background(Brush.sweepGradient(listOf(scheme.primary, scheme.tertiary, scheme.primary)))
+                ) {
+                    Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(stringResource(R.string.screen_title_coach), fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = scheme.onSurface)
+                Spacer(modifier = Modifier.weight(1f))
+                IconButton(onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); vm.newConversation() }) {
+                    Icon(Icons.Default.AddComment, contentDescription = stringResource(R.string.cd_new_conversation), tint = scheme.onSurfaceVariant)
+                }
+                IconButton(
+                    onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); showClearDialog = true },
+                    enabled = state.messages.isNotEmpty() && !state.isLoading
+                ) {
+                    Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.cd_clear_chat_history), tint = if (state.messages.isNotEmpty() && !state.isLoading) scheme.error else scheme.onSurfaceVariant)
+                }
+            }
+
+            HorizontalDivider(color = scheme.outlineVariant)
+
+            if (!state.hasApiKey) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    PulseCard(modifier = Modifier.fillMaxWidth().padding(24.dp)) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp)) {
+                            Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = scheme.primary, modifier = Modifier.size(40.dp))
+                            Text(stringResource(R.string.coach_no_key_title), fontWeight = FontWeight.Bold, fontSize = 18.sp, color = scheme.onSurface)
+                            Text(stringResource(R.string.coach_no_key_message), fontSize = 14.sp, color = scheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 8.dp), lineHeight = 20.sp)
+                            Button(onClick = { navController.navigate(NavRoute.Settings.route) }, colors = ButtonDefaults.buttonColors(containerColor = scheme.primary)) {
+                                Text(stringResource(R.string.action_open_settings), color = scheme.onPrimary)
+                            }
+                        }
+                    }
+                }
+                return@Column
+            }
+
+            val lastIdx = state.messages.lastIndex
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                if (state.messages.isEmpty() && !state.isLoading) {
+                    item { WelcomeCard(onChipTap = { inputText = it }) }
+                }
+                items(state.messages, key = { it.id }) { msg ->
+                    val isLast = state.messages.indexOf(msg) == lastIdx
+                    MessageBubble(msg = msg, showChips = isLast && msg.role == "assistant" && !state.isLoading, onChipTap = { chip -> haptic.performHapticFeedback(HapticFeedbackType.LongPress); vm.send(chip) })
+                }
+                if (state.isLoading && state.streamingText == null) { item { LoadingBubble(traceEvents = state.traceEvents) } }
+                state.streamingText?.let { raw -> item(key = "streaming") { StreamingBubble(rawJson = raw) } }
+            }
+
+            HorizontalDivider(color = scheme.outlineVariant)
+            Row(modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                OutlinedTextField(
+                    value = inputText,
+                    onValueChange = { inputText = it },
+                    placeholder = { Text(stringResource(R.string.coach_input_placeholder), color = scheme.onSurfaceVariant, fontSize = 14.sp) },
+                    modifier = Modifier.weight(1f),
+                    shape = MaterialTheme.shapes.extraLarge,
+                    maxLines = 4,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                    keyboardActions = KeyboardActions(onSend = { sendMessage() })
+                )
+                IconButton(onClick = { sendMessage() }, enabled = inputText.isNotBlank() && !state.isLoading) {
+                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = stringResource(R.string.cd_send), tint = if (inputText.isNotBlank() && !state.isLoading) scheme.primary else scheme.onSurfaceVariant)
+                }
+            }
+        }
+
+        SnackbarHost(hostState = snackbar, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = bottomNavHeight + 80.dp))
+    }
+
+    if (showClearDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearDialog = false },
+            title = { Text(stringResource(R.string.dialog_clear_chat_title)) },
+            text = { Text(stringResource(R.string.dialog_clear_chat_message)) },
+            confirmButton = {
+                TextButton(onClick = { showClearDialog = false; haptic.performHapticFeedback(HapticFeedbackType.LongPress); vm.clearHistory() }) {
+                    Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = { TextButton(onClick = { showClearDialog = false }) { Text(stringResource(R.string.action_cancel)) } }
+        )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun MessageBubble(msg: CoachMessageUi, showChips: Boolean, onChipTap: (String) -> Unit) {
+    val scheme = MaterialTheme.colorScheme
+    if (msg.role == "user") {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            Box(modifier = Modifier.widthIn(max = 280.dp).clip(RoundedCornerShape(24.dp, 6.dp, 24.dp, 24.dp)).background(scheme.primaryContainer).padding(horizontal = 14.dp, vertical = 10.dp)) {
+                Text(msg.text, fontSize = 14.sp, color = scheme.onPrimaryContainer, lineHeight = 20.sp)
+            }
+        }
+        return
+    }
+    val response = msg.response
+    Column(modifier = Modifier.fillMaxWidth()) {
+        PulseCard(modifier = Modifier.fillMaxWidth()) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (response != null) {
+                    if (response.title.isNotBlank()) Text(response.title, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = scheme.onSurface)
+                    if (response.summary.isNotBlank()) Text(response.summary, fontSize = 14.sp, color = scheme.onSurfaceVariant, lineHeight = 20.sp)
+                    if (response.bullets.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            response.bullets.forEach { bullet ->
+                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Text("•", fontSize = 14.sp, color = scheme.primary)
+                                    Text(bullet, fontSize = 14.sp, color = scheme.onSurfaceVariant, lineHeight = 20.sp)
+                                }
+                            }
+                        }
+                    }
+                    response.chart?.let { chart -> Spacer(modifier = Modifier.height(4.dp)); CoachChartCard(chart = chart, modifier = Modifier.fillMaxWidth()) }
+                    response.dataQualityNote?.let { note -> Text(note, fontSize = 12.sp, color = scheme.onSurfaceVariant, lineHeight = 16.sp) }
+                    response.safetyNote?.let { note ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.Top, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(scheme.error.copy(alpha = 0.1f)).padding(8.dp)) {
+                            Icon(Icons.Default.Warning, contentDescription = null, tint = scheme.error, modifier = Modifier.size(14.dp))
+                            Text(note, fontSize = 12.sp, color = scheme.error, lineHeight = 16.sp)
+                        }
+                    }
+                    ConfidencePill(response.confidence)
+                } else {
+                    Text(msg.text, fontSize = 14.sp, color = scheme.onSurfaceVariant, lineHeight = 20.sp)
+                }
+            }
+        }
+        if (showChips && response != null && response.followUpChips.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(6.dp))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                response.followUpChips.forEach { chip ->
+                    SuggestionChip(onClick = { onChipTap(chip) }, label = { Text(chip, fontSize = 12.sp) })
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LoadingBubble(traceEvents: List<String>) {
+    val scheme = MaterialTheme.colorScheme
+    val transition = rememberInfiniteTransition(label = "loading")
+    val alpha by transition.animateFloat(initialValue = 0.4f, targetValue = 1f, animationSpec = infiniteRepeatable(tween(700, easing = LinearEasing), RepeatMode.Reverse), label = "pulse")
+    PulseCard(modifier = Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            CircularProgressIndicator(modifier = Modifier.size(16.dp).alpha(alpha), color = scheme.primary, strokeWidth = 2.dp)
+            Text(traceEvents.lastOrNull() ?: stringResource(R.string.coach_loading_thinking), fontSize = 13.sp, color = scheme.onSurfaceVariant, modifier = Modifier.alpha(alpha))
+        }
+    }
+}
+
+@Composable
+private fun StreamingBubble(rawJson: String) {
+    val scheme  = MaterialTheme.colorScheme
+    val title   = remember(rawJson) { extractJsonField(rawJson, "title") }
+    val summary = remember(rawJson) { extractJsonField(rawJson, "summary") }
+    val cursorTransition = rememberInfiniteTransition(label = "cursor")
+    val cursorAlpha by cursorTransition.animateFloat(initialValue = 1f, targetValue = 0f, animationSpec = infiniteRepeatable(tween(530, easing = LinearEasing), RepeatMode.Reverse), label = "blink")
+    PulseCard(modifier = Modifier.fillMaxWidth()) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            when {
+                summary.isNotBlank() -> {
+                    if (title.isNotBlank()) Text(title, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = scheme.onSurface)
+                    val displayText = buildAnnotatedString {
+                        append(summary)
+                        withStyle(SpanStyle(color = scheme.primary.copy(alpha = cursorAlpha))) { append("▌") }
+                    }
+                    Text(displayText, fontSize = 14.sp, color = scheme.onSurfaceVariant, lineHeight = 20.sp)
+                }
+                title.isNotBlank() -> {
+                    Text(title, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = scheme.onSurface)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        CircularProgressIndicator(modifier = Modifier.size(12.dp), color = scheme.primary, strokeWidth = 1.5.dp)
+                        Text(stringResource(R.string.coach_streaming_composing), fontSize = 13.sp, color = scheme.onSurfaceVariant)
+                    }
+                }
+                else -> {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        CircularProgressIndicator(modifier = Modifier.size(12.dp), color = scheme.primary, strokeWidth = 1.5.dp)
+                        Text(stringResource(R.string.coach_streaming_generating), fontSize = 13.sp, color = scheme.onSurfaceVariant)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ConfidencePill(confidence: String) {
+    val scheme = MaterialTheme.colorScheme
+    val (label, color) = when (confidence) {
+        "high" -> stringResource(R.string.coach_confidence_high) to scheme.tertiary
+        "medium" -> stringResource(R.string.coach_confidence_medium) to scheme.onSurfaceVariant
+        "low" -> stringResource(R.string.coach_confidence_low) to scheme.error
+        "insufficient_data" -> stringResource(R.string.coach_confidence_insufficient_data) to scheme.error
+        else -> confidence to scheme.onSurfaceVariant
+    }
+    Box(modifier = Modifier.clip(RoundedCornerShape(50)).background(color.copy(alpha = 0.12f)).padding(horizontal = 8.dp, vertical = 3.dp)) {
+        Text(label, fontSize = 11.sp, color = color, fontWeight = FontWeight.Medium)
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun WelcomeCard(onChipTap: (String) -> Unit) {
+    val scheme = MaterialTheme.colorScheme
+    val suggestions = listOf(stringResource(R.string.coach_suggestion_hr_trend), stringResource(R.string.coach_suggestion_sleep_last_night), stringResource(R.string.coach_suggestion_step_goal), stringResource(R.string.coach_suggestion_spo2_avg))
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(56.dp).clip(CircleShape).background(Brush.sweepGradient(listOf(scheme.primary, scheme.tertiary, scheme.secondary, scheme.primary)))) {
+            Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
+        }
+        Text(stringResource(R.string.coach_welcome_subtitle), fontSize = 14.sp, color = scheme.onSurfaceVariant, lineHeight = 20.sp)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+            suggestions.forEach { s ->
+                SuggestionChip(onClick = { onChipTap(s) }, label = { Text(s, fontSize = 12.sp) })
+            }
+        }
+    }
+}

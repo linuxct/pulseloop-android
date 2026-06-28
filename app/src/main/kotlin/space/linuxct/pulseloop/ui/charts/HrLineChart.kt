@@ -1,5 +1,6 @@
 package space.linuxct.pulseloop.ui.charts
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -10,7 +11,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import space.linuxct.pulseloop.R
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.rememberVicoScrollState
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
@@ -36,6 +39,7 @@ fun HrLineChart(
     height: Int = 150,
 ) {
     val colors = LocalPulseColors.current
+    val unitBpm = stringResource(R.string.unit_bpm)
 
     if (samples.size < 2) {
         Box(
@@ -43,7 +47,7 @@ fun HrLineChart(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = "No data",
+                text = stringResource(R.string.chart_empty_no_data),
                 color = colors.textMuted,
                 style = MaterialTheme.typography.bodySmall,
             )
@@ -79,13 +83,19 @@ fun HrLineChart(
         },
     )
 
-    val marker = rememberPulseChartMarker("bpm", samples, showGuideline = true)
+    val marker = rememberPulseChartMarker(unitBpm, samples, showGuideline = true)
     val chart = rememberCartesianChart(layer, marker = marker)
 
-    CartesianChartHost(
-        chart = chart,
-        modelProducer = modelProducer,
-        modifier = if (modifier == Modifier) Modifier.fillMaxWidth().height(height.dp) else modifier,
-        scrollState = rememberVicoScrollState(scrollEnabled = false),
-    )
+    val outerMod = if (modifier == Modifier) Modifier.fillMaxWidth().height(height.dp) else modifier
+    Box(modifier = outerMod) {
+        CartesianChartHost(
+            chart = chart,
+            modelProducer = modelProducer,
+            modifier = Modifier.matchParentSize(),
+            scrollState = rememberVicoScrollState(scrollEnabled = false),
+        )
+        Canvas(modifier = Modifier.matchParentSize()) {
+            drawTimeMarkers(samples)
+        }
+    }
 }

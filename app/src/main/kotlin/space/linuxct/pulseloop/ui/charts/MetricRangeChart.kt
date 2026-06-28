@@ -22,7 +22,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import space.linuxct.pulseloop.R
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.rememberVicoScrollState
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
@@ -60,7 +62,7 @@ fun MetricRangeChart(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = "No data",
+                text = stringResource(R.string.chart_empty_no_data),
                 color = colors.textMuted,
                 style = MaterialTheme.typography.bodySmall,
             )
@@ -146,7 +148,7 @@ fun MetricRangeSelectorChart(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = range.label,
+                        text = range.label(),
                         color = if (isActive) colors.textPrimary else colors.textMuted,
                         style = MaterialTheme.typography.labelMedium,
                     )
@@ -159,13 +161,13 @@ fun MetricRangeSelectorChart(
     }
 }
 
-private val MetricRange.label: String
-    get() = when (this) {
-        MetricRange.TWENTY_FOUR_HOURS -> "24h"
-        MetricRange.SEVEN_DAYS -> "7d"
-        MetricRange.THIRTY_DAYS -> "30d"
-        MetricRange.TWELVE_MONTHS -> "12mo"
-    }
+@Composable
+private fun MetricRange.label(): String = when (this) {
+    MetricRange.TWENTY_FOUR_HOURS -> stringResource(R.string.range_label_24h)
+    MetricRange.SEVEN_DAYS -> stringResource(R.string.range_label_7d)
+    MetricRange.THIRTY_DAYS -> stringResource(R.string.range_label_30d)
+    MetricRange.TWELVE_MONTHS -> stringResource(R.string.range_label_12mo)
+}
 
 /**
  * Range-selector wrapper for time-series line charts.

@@ -21,7 +21,13 @@ class JringCoordinator : WearableCoordinator {
         WearableCapability.MANUAL_HEART_RATE,
         WearableCapability.MANUAL_SPO2,
         WearableCapability.REALTIME_HEART_RATE,
-        WearableCapability.FIND_DEVICE
+        WearableCapability.FIND_DEVICE,
+        // Combined-measurement metrics (0x23/0x24). Jring exposes BP + blood sugar (with calibration),
+        // plus stress and fatigue. It has no skin-temperature sensor and no reliable HRV.
+        WearableCapability.BLOOD_PRESSURE,
+        WearableCapability.BLOOD_SUGAR,
+        WearableCapability.STRESS,
+        WearableCapability.FATIGUE
     )
 
     override fun matches(name: String?, advertisement: AdvertisementInfo): Boolean {

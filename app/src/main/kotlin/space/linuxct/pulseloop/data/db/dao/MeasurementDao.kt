@@ -19,6 +19,18 @@ interface MeasurementDao {
     @Query("SELECT * FROM measurements WHERE kindRaw = :kind AND timestamp >= :cutoffMs ORDER BY timestamp DESC")
     suspend fun getByKindSince(kind: String, cutoffMs: Long): List<MeasurementEntity>
 
+    @Query("SELECT * FROM measurements WHERE kindRaw = :kind AND timestamp >= :startMs AND timestamp <= :endMs ORDER BY timestamp DESC")
+    suspend fun getByKindBetween(kind: String, startMs: Long, endMs: Long): List<MeasurementEntity>
+
+    @Query("SELECT MIN(timestamp) FROM measurements WHERE kindRaw = :kind")
+    suspend fun earliestTimestamp(kind: String): Long?
+
+    @Query("SELECT MAX(timestamp) FROM measurements WHERE kindRaw = :kind")
+    suspend fun latestTimestamp(kind: String): Long?
+
+    @Query("SELECT COUNT(*) FROM measurements WHERE kindRaw = :kind")
+    suspend fun countByKind(kind: String): Int
+
     @Query("SELECT * FROM measurements WHERE kindRaw = :kind ORDER BY timestamp DESC LIMIT 1")
     suspend fun getLatest(kind: String): MeasurementEntity?
 

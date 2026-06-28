@@ -1,16 +1,20 @@
 package space.linuxct.pulseloop.ui.theme
 
+import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
@@ -28,6 +32,7 @@ object DarkPulseColors {
     val textMuted            = Color(0xFF6F7A8C)
     val accent               = Color(0xFF7C5CFF)
     val accentSoft           = Color(0x297C5CFF)
+    val onAccentSoft         = textPrimary
     val success              = Color(0xFF35E0A1)
     val warning              = Color(0xFFFFB86B)
     val danger               = Color(0xFFFF4D6D)
@@ -46,6 +51,18 @@ object DarkPulseColors {
     val stress               = Color(0xFFFF8A4C)
     val hrv                  = Color(0xFF9D7CFF)
     val temperature          = Color(0xFF2DD4D8)
+    val bloodPressure        = Color(0xFF7C5CFF)
+    val bloodSugar           = Color(0xFF35E0A1)
+    val fatigue              = Color(0xFFFFB86B)
+    // Sleep stage + tooltip
+    val sleepDeep            = Color(0xFF3F2DD8)
+    val sleepLight           = Color(0xFF7C5CFF)
+    val sleepRem             = Color(0xFF2DD4D8)
+    val sleepAwake           = Color(0xFFFFB86B)
+    val sleepUnknown         = Color(0xFF6F7A8C)
+    val sleepBar             = Color(0xFF8B7CFF)
+    val tooltipBackground    = Color(0xFF1E2D45)
+    val tooltipText          = Color.White
 }
 
 // ── Light palette ─────────────────────────────────────────────────────────────
@@ -61,6 +78,7 @@ object LightPulseColors {
     val textMuted            = Color(0xFF8A97A8)
     val accent               = Color(0xFF2563EB)
     val accentSoft           = Color(0x292563EB)
+    val onAccentSoft         = textPrimary
     val success              = Color(0xFF059669)
     val warning              = Color(0xFFD97706)
     val danger               = Color(0xFFDC2626)
@@ -78,6 +96,18 @@ object LightPulseColors {
     val stress               = Color(0xFFEA580C)
     val hrv                  = Color(0xFF7C3AED)
     val temperature          = Color(0xFF0891B2)
+    val bloodPressure        = Color(0xFF6D28D9)
+    val bloodSugar           = Color(0xFF059669)
+    val fatigue              = Color(0xFFD97706)
+    // Sleep stage + tooltip
+    val sleepDeep            = Color(0xFF3B2FC5)
+    val sleepLight           = Color(0xFF6D28D9)
+    val sleepRem             = Color(0xFF0891B2)
+    val sleepAwake           = Color(0xFFD97706)
+    val sleepUnknown         = Color(0xFF8A97A8)
+    val sleepBar             = Color(0xFF6D28D9)
+    val tooltipBackground    = Color(0xFF1E293B)
+    val tooltipText          = Color.White
 }
 
 // ── Semantic colour set surfaced to composables ───────────────────────────────
@@ -93,6 +123,7 @@ data class PulseColors(
     val textMuted: Color,
     val accent: Color,
     val accentSoft: Color,
+    val onAccentSoft: Color,
     val success: Color,
     val warning: Color,
     val danger: Color,
@@ -109,7 +140,18 @@ data class PulseColors(
     val battery: Color,
     val stress: Color,
     val hrv: Color,
-    val temperature: Color
+    val temperature: Color,
+    val bloodPressure: Color,
+    val bloodSugar: Color,
+    val fatigue: Color,
+    val sleepDeep: Color,
+    val sleepLight: Color,
+    val sleepRem: Color,
+    val sleepAwake: Color,
+    val sleepUnknown: Color,
+    val sleepBar: Color,
+    val tooltipBackground: Color,
+    val tooltipText: Color
 )
 
 val darkPulseColors = PulseColors(
@@ -123,6 +165,7 @@ val darkPulseColors = PulseColors(
     textMuted           = DarkPulseColors.textMuted,
     accent              = DarkPulseColors.accent,
     accentSoft          = DarkPulseColors.accentSoft,
+    onAccentSoft        = DarkPulseColors.onAccentSoft,
     success             = DarkPulseColors.success,
     warning             = DarkPulseColors.warning,
     danger              = DarkPulseColors.danger,
@@ -139,7 +182,18 @@ val darkPulseColors = PulseColors(
     battery             = DarkPulseColors.battery,
     stress              = DarkPulseColors.stress,
     hrv                 = DarkPulseColors.hrv,
-    temperature         = DarkPulseColors.temperature
+    temperature         = DarkPulseColors.temperature,
+    bloodPressure       = DarkPulseColors.bloodPressure,
+    bloodSugar          = DarkPulseColors.bloodSugar,
+    fatigue             = DarkPulseColors.fatigue,
+    sleepDeep           = DarkPulseColors.sleepDeep,
+    sleepLight          = DarkPulseColors.sleepLight,
+    sleepRem            = DarkPulseColors.sleepRem,
+    sleepAwake          = DarkPulseColors.sleepAwake,
+    sleepUnknown        = DarkPulseColors.sleepUnknown,
+    sleepBar            = DarkPulseColors.sleepBar,
+    tooltipBackground   = DarkPulseColors.tooltipBackground,
+    tooltipText         = DarkPulseColors.tooltipText
 )
 
 val lightPulseColors = PulseColors(
@@ -153,6 +207,7 @@ val lightPulseColors = PulseColors(
     textMuted           = LightPulseColors.textMuted,
     accent              = LightPulseColors.accent,
     accentSoft          = LightPulseColors.accentSoft,
+    onAccentSoft        = LightPulseColors.onAccentSoft,
     success             = LightPulseColors.success,
     warning             = LightPulseColors.warning,
     danger              = LightPulseColors.danger,
@@ -169,7 +224,18 @@ val lightPulseColors = PulseColors(
     battery             = LightPulseColors.battery,
     stress              = LightPulseColors.stress,
     hrv                 = LightPulseColors.hrv,
-    temperature         = LightPulseColors.temperature
+    temperature         = LightPulseColors.temperature,
+    bloodPressure       = LightPulseColors.bloodPressure,
+    bloodSugar          = LightPulseColors.bloodSugar,
+    fatigue             = LightPulseColors.fatigue,
+    sleepDeep           = LightPulseColors.sleepDeep,
+    sleepLight          = LightPulseColors.sleepLight,
+    sleepRem            = LightPulseColors.sleepRem,
+    sleepAwake          = LightPulseColors.sleepAwake,
+    sleepUnknown        = LightPulseColors.sleepUnknown,
+    sleepBar            = LightPulseColors.sleepBar,
+    tooltipBackground   = LightPulseColors.tooltipBackground,
+    tooltipText         = LightPulseColors.tooltipText
 )
 
 val LocalPulseColors = staticCompositionLocalOf { darkPulseColors }
@@ -183,16 +249,40 @@ private val darkM3 = darkColorScheme(
     onPrimaryContainer = DarkPulseColors.textPrimary,
     secondary          = DarkPulseColors.textSecondary,
     onSecondary        = DarkPulseColors.background,
+    // Without these the raw-M3 roles fall back to the M3 baseline (purple-grey) palette, which
+    // clashes with the V1 navy. Map them to PulseColors so any plain Material3 component (e.g. the
+    // OTLP/Data-export screen's chips and fields) is on-brand in LEGACY. V2 uses the dynamic scheme,
+    // so it is unaffected by these.
+    secondaryContainer      = DarkPulseColors.elevated,
+    onSecondaryContainer    = DarkPulseColors.textPrimary,
+    tertiary                = DarkPulseColors.info,
+    onTertiary              = Color.White,
+    tertiaryContainer       = DarkPulseColors.elevated,
+    onTertiaryContainer     = DarkPulseColors.textPrimary,
     background         = DarkPulseColors.background,
     onBackground       = DarkPulseColors.textPrimary,
     surface            = DarkPulseColors.card,
     onSurface          = DarkPulseColors.textPrimary,
     surfaceVariant     = DarkPulseColors.elevated,
     onSurfaceVariant   = DarkPulseColors.textSecondary,
+    surfaceContainerLowest  = DarkPulseColors.background,
+    surfaceContainerLow     = DarkPulseColors.secondaryBackground,
+    surfaceContainer        = DarkPulseColors.card,
+    surfaceContainerHigh    = DarkPulseColors.elevated,
+    surfaceContainerHighest = DarkPulseColors.elevated,
+    surfaceBright           = DarkPulseColors.elevated,
+    surfaceDim              = DarkPulseColors.background,
+    surfaceTint             = DarkPulseColors.accent,
+    inverseSurface          = DarkPulseColors.textPrimary,
+    inverseOnSurface        = DarkPulseColors.background,
+    inversePrimary          = DarkPulseColors.accent,
     outline            = DarkPulseColors.borderStrong,
     outlineVariant     = DarkPulseColors.borderSubtle,
     error              = DarkPulseColors.danger,
-    onError            = Color.White
+    onError            = Color.White,
+    errorContainer     = DarkPulseColors.elevated,
+    onErrorContainer   = DarkPulseColors.danger,
+    scrim              = Color.Black
 )
 
 private val lightM3 = lightColorScheme(
@@ -202,16 +292,36 @@ private val lightM3 = lightColorScheme(
     onPrimaryContainer = LightPulseColors.textPrimary,
     secondary          = LightPulseColors.textSecondary,
     onSecondary        = LightPulseColors.background,
+    secondaryContainer      = LightPulseColors.elevated,
+    onSecondaryContainer    = LightPulseColors.textPrimary,
+    tertiary                = LightPulseColors.info,
+    onTertiary              = Color.White,
+    tertiaryContainer       = LightPulseColors.elevated,
+    onTertiaryContainer     = LightPulseColors.textPrimary,
     background         = LightPulseColors.background,
     onBackground       = LightPulseColors.textPrimary,
     surface            = LightPulseColors.card,
     onSurface          = LightPulseColors.textPrimary,
     surfaceVariant     = LightPulseColors.elevated,
     onSurfaceVariant   = LightPulseColors.textSecondary,
+    surfaceContainerLowest  = LightPulseColors.background,
+    surfaceContainerLow     = LightPulseColors.secondaryBackground,
+    surfaceContainer        = LightPulseColors.card,
+    surfaceContainerHigh    = LightPulseColors.elevated,
+    surfaceContainerHighest = LightPulseColors.elevated,
+    surfaceBright           = LightPulseColors.card,
+    surfaceDim              = LightPulseColors.secondaryBackground,
+    surfaceTint             = LightPulseColors.accent,
+    inverseSurface          = LightPulseColors.textPrimary,
+    inverseOnSurface        = LightPulseColors.background,
+    inversePrimary          = LightPulseColors.accent,
     outline            = LightPulseColors.borderStrong,
     outlineVariant     = LightPulseColors.borderSubtle,
     error              = LightPulseColors.danger,
-    onError            = Color.White
+    onError            = Color.White,
+    errorContainer     = LightPulseColors.elevated,
+    onErrorContainer   = LightPulseColors.danger,
+    scrim              = Color.Black
 )
 
 // ── Typography ────────────────────────────────────────────────────────────────
@@ -244,6 +354,89 @@ fun PulseTheme(
     CompositionLocalProvider(LocalPulseColors provides pulseColors) {
         MaterialTheme(
             colorScheme = m3Colors,
+            typography  = pulseTypography,
+            content     = content
+        )
+    }
+}
+
+// ── Material You color mapping ────────────────────────────────────────────────
+
+private fun materialYouPulseColors(scheme: ColorScheme, darkTheme: Boolean): PulseColors {
+    val base = if (darkTheme) darkPulseColors else lightPulseColors
+    return base.copy(
+        background          = scheme.background,
+        secondaryBackground = scheme.surfaceContainerLowest,
+        card                = scheme.surfaceContainerLow,
+        cardSoft            = scheme.surfaceContainerLowest,
+        elevated            = scheme.surfaceContainer,
+        textPrimary         = scheme.onSurface,
+        textSecondary       = scheme.onSurfaceVariant,
+        textMuted           = scheme.outline,
+        accent              = scheme.primary,
+        accentSoft          = scheme.primaryContainer,
+        onAccentSoft        = scheme.onPrimaryContainer,
+        success             = scheme.tertiary,
+        danger              = scheme.error,
+        borderSubtle        = Color.Transparent,
+        borderStrong        = scheme.outlineVariant,
+        heartRate           = scheme.error,
+        spo2                = scheme.tertiary,
+        steps               = scheme.primary,
+        calories            = scheme.secondary,
+        sleep               = scheme.secondary,
+        warning             = scheme.tertiary,
+        info                = scheme.secondary,
+        distance            = scheme.primary,
+        readiness           = scheme.tertiary,
+        battery             = scheme.tertiary,
+        stress              = scheme.error,
+        hrv                 = scheme.secondary,
+        temperature         = scheme.tertiary,
+        bloodPressure       = scheme.secondary,
+        bloodSugar          = scheme.tertiary,
+        fatigue             = scheme.error,
+        sleepDeep           = scheme.primary,
+        sleepLight          = scheme.secondary,
+        sleepRem            = scheme.tertiary,
+        sleepAwake          = scheme.error,
+        sleepUnknown        = scheme.outline,
+        sleepBar            = scheme.primary,
+        tooltipBackground   = scheme.inverseSurface,
+        tooltipText         = scheme.inverseOnSurface
+    )
+}
+
+// ── AppTheme — root composable used by MainActivity ──────────────────────────
+
+@Composable
+fun AppTheme(
+    useMaterialYou: Boolean = false,
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    content: @Composable () -> Unit
+) {
+    if (!useMaterialYou) {
+        CompositionLocalProvider(LocalUiMode provides UiMode.LEGACY) {
+            PulseTheme(darkTheme = darkTheme, content = content)
+        }
+        return
+    }
+
+    val context = LocalContext.current
+    val scheme = when {
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && darkTheme  -> dynamicDarkColorScheme(context)
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !darkTheme -> dynamicLightColorScheme(context)
+        darkTheme  -> darkColorScheme(primary = Color(0xFF5B8DEF))
+        else       -> lightColorScheme(primary = Color(0xFF5B8DEF))
+    }
+    val pulseColors = materialYouPulseColors(scheme, darkTheme)
+
+    CompositionLocalProvider(
+        LocalPulseColors provides pulseColors,
+        LocalUiMode provides UiMode.MATERIAL_YOU
+    ) {
+        MaterialTheme(
+            colorScheme = scheme,
             typography  = pulseTypography,
             content     = content
         )

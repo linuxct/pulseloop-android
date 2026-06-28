@@ -32,10 +32,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import space.linuxct.pulseloop.R
 import space.linuxct.pulseloop.ui.components.PrimaryButton
 import space.linuxct.pulseloop.ui.components.SecondaryButton
 import space.linuxct.pulseloop.ui.theme.LocalPulseColors
@@ -89,17 +91,17 @@ fun OnboardingFlowScreen(
             when (step) {
                 0 -> OnboardingPage(
                     title = "PulseLoop",
-                    subtitle = "Your ring data, activity, sleep, and coach in one native app.",
-                    actionTitle = "Get started"
+                    subtitle = stringResource(R.string.onboarding_welcome_subtitle),
+                    actionTitle = stringResource(R.string.onboarding_action_get_started)
                 ) { step++ }
                 1 -> ProfilePage { name, age, sex, weight, height ->
                     vm.saveProfile(name, age, sex, weight, height)
                     step++
                 }
                 2 -> OnboardingPage(
-                    title = "Learning your baseline",
-                    subtitle = "Wear the ring through the day and sync after sleep so trends become personal.",
-                    actionTitle = "Continue"
+                    title = stringResource(R.string.onboarding_baseline_title),
+                    subtitle = stringResource(R.string.onboarding_baseline_subtitle),
+                    actionTitle = stringResource(R.string.action_continue)
                 ) { step++ }
                 3 -> GoalsPage { stepsGoal, sleepMinutes, activeMinutes ->
                     vm.saveGoals(stepsGoal, sleepMinutes, activeMinutes)
@@ -147,9 +149,9 @@ private fun ProfilePage(onContinue: (name: String?, age: Int?, sex: String?, wei
             .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text("Set profile", fontSize = 34.sp, color = colors.textPrimary)
+        Text(stringResource(R.string.onboarding_profile_title), fontSize = 34.sp, color = colors.textPrimary)
         Text(
-            "Name and body metrics help PulseLoop personalise summaries and tune calorie estimates.",
+            stringResource(R.string.onboarding_profile_description),
             fontSize = 15.sp,
             color = colors.textSecondary
         )
@@ -157,7 +159,7 @@ private fun ProfilePage(onContinue: (name: String?, age: Int?, sex: String?, wei
         OutlinedTextField(
             value = nameText,
             onValueChange = { nameText = it.take(50) },
-            label = { Text("Your name") },
+            label = { Text(stringResource(R.string.onboarding_label_your_name)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
@@ -167,7 +169,7 @@ private fun ProfilePage(onContinue: (name: String?, age: Int?, sex: String?, wei
         OutlinedTextField(
             value = ageText,
             onValueChange = { ageText = it.filter { c -> c.isDigit() }.take(3) },
-            label = { Text("Age") },
+            label = { Text(stringResource(R.string.label_age)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
@@ -175,9 +177,11 @@ private fun ProfilePage(onContinue: (name: String?, age: Int?, sex: String?, wei
         )
 
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("Biological sex", fontSize = 13.sp, color = colors.textMuted)
+            Text(stringResource(R.string.label_biological_sex), fontSize = 13.sp, color = colors.textMuted)
+            val maleLabel = stringResource(R.string.label_sex_male)
+            val femaleLabel = stringResource(R.string.label_sex_female)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf("Male" to "male", "Female" to "female").forEach { (label, value) ->
+                listOf(maleLabel to "male", femaleLabel to "female").forEach { (label, value) ->
                     FilterChip(
                         selected = sex == value,
                         onClick = { sex = if (sex == value) "" else value },
@@ -196,7 +200,7 @@ private fun ProfilePage(onContinue: (name: String?, age: Int?, sex: String?, wei
         OutlinedTextField(
             value = weightText,
             onValueChange = { weightText = it.filter { c -> c.isDigit() || c == '.' }.take(6) },
-            label = { Text("Weight (kg)") },
+            label = { Text(stringResource(R.string.label_weight_kg)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
@@ -206,7 +210,7 @@ private fun ProfilePage(onContinue: (name: String?, age: Int?, sex: String?, wei
         OutlinedTextField(
             value = heightText,
             onValueChange = { heightText = it.filter { c -> c.isDigit() }.take(3) },
-            label = { Text("Height (cm)") },
+            label = { Text(stringResource(R.string.label_height_cm)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
@@ -215,7 +219,7 @@ private fun ProfilePage(onContinue: (name: String?, age: Int?, sex: String?, wei
 
         Spacer(modifier = Modifier.height(8.dp))
         PrimaryButton(
-            title = "Continue",
+            title = stringResource(R.string.action_continue),
             onClick = {
                 onContinue(
                     nameText.ifBlank { null },
@@ -227,7 +231,7 @@ private fun ProfilePage(onContinue: (name: String?, age: Int?, sex: String?, wei
             }
         )
         SecondaryButton(
-            title = "Skip for now",
+            title = stringResource(R.string.action_skip_for_now),
             onClick = { onContinue(null, null, null, null, null) }
         )
     }
@@ -256,9 +260,9 @@ private fun GoalsPage(onContinue: (steps: Int, sleepMinutes: Int, activeMinutes:
             .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text("Goals", fontSize = 34.sp, color = colors.textPrimary)
+        Text(stringResource(R.string.onboarding_goals_title), fontSize = 34.sp, color = colors.textPrimary)
         Text(
-            "Set your daily targets. You can adjust these any time in Settings.",
+            stringResource(R.string.onboarding_goals_description),
             fontSize = 15.sp,
             color = colors.textSecondary
         )
@@ -266,7 +270,7 @@ private fun GoalsPage(onContinue: (steps: Int, sleepMinutes: Int, activeMinutes:
         OutlinedTextField(
             value = stepsText,
             onValueChange = { stepsText = it.filter { c -> c.isDigit() }.take(6) },
-            label = { Text("Daily steps") },
+            label = { Text(stringResource(R.string.label_daily_steps)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
@@ -276,7 +280,7 @@ private fun GoalsPage(onContinue: (steps: Int, sleepMinutes: Int, activeMinutes:
         OutlinedTextField(
             value = sleepHoursText,
             onValueChange = { sleepHoursText = it.filter { c -> c.isDigit() || c == '.' }.take(4) },
-            label = { Text("Sleep goal (hours)") },
+            label = { Text(stringResource(R.string.label_sleep_goal_hours)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
@@ -286,7 +290,7 @@ private fun GoalsPage(onContinue: (steps: Int, sleepMinutes: Int, activeMinutes:
         OutlinedTextField(
             value = activeMinsText,
             onValueChange = { activeMinsText = it.filter { c -> c.isDigit() }.take(3) },
-            label = { Text("Active minutes") },
+            label = { Text(stringResource(R.string.label_active_minutes)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
@@ -295,7 +299,7 @@ private fun GoalsPage(onContinue: (steps: Int, sleepMinutes: Int, activeMinutes:
 
         Spacer(modifier = Modifier.height(8.dp))
         PrimaryButton(
-            title = "Continue",
+            title = stringResource(R.string.action_continue),
             onClick = {
                 onContinue(
                     stepsText.toIntOrNull()?.coerceIn(1_000, 100_000) ?: 10_000,
@@ -321,18 +325,18 @@ private fun PairPage(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = "Pair your ring",
+            text = stringResource(R.string.onboarding_pair_title),
             fontSize = 34.sp,
             color = colors.textPrimary
         )
         Text(
-            text = "Search for your jring or Colmi ring nearby.",
+            text = stringResource(R.string.onboarding_pair_subtitle),
             fontSize = 15.sp,
             color = colors.textSecondary
         )
         Spacer(modifier = Modifier.height(8.dp))
-        PrimaryButton(title = "Pair now", onClick = onPairNow)
-        SecondaryButton(title = "Skip for now", onClick = onSkip)
+        PrimaryButton(title = stringResource(R.string.action_pair_now), onClick = onPairNow)
+        SecondaryButton(title = stringResource(R.string.action_skip_for_now), onClick = onSkip)
     }
 }
 

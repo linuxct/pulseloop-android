@@ -29,12 +29,13 @@ fun rememberPulseChartMarker(
     labelPosition: DefaultCartesianMarker.LabelPosition = DefaultCartesianMarker.LabelPosition.Top,
     showGuideline: Boolean = false,
 ): CartesianMarker {
+    val colors = LocalPulseColors.current
     val bubbleBg = rememberShapeComponent(
-        fill = fill(Color(0xFF1E2D45)),
+        fill = fill(colors.tooltipBackground),
         shape = CorneredShape.Pill,
     )
     val label = rememberTextComponent(
-        color = Color.White,
+        color = colors.tooltipText,
         textSize = 12.sp,
         lineCount = 2,
         textAlignment = android.text.Layout.Alignment.ALIGN_CENTER,

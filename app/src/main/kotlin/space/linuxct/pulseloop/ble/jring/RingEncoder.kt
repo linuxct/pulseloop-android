@@ -18,11 +18,55 @@ class RingEncoder {
 
     fun makeHeartRateStopCommand(): ByteArray = hex("1500000000000000000000000000000000000000")
 
-    fun makeSpO2StartCommand(): ByteArray = hex("2301000000000000000000000000000000000000")
+    // 0x23 starts a combined spot measurement (HR + BP + SpO2 + fatigue + stress + blood sugar);
+    // the 0x24 response carries all of them. These are the same bytes historically used for SpO2.
+    fun makeCombinedMeasurementStartCommand(): ByteArray = hex("2301000000000000000000000000000000000000")
+    fun makeCombinedMeasurementStopCommand(): ByteArray = hex("2300000000000000000000000000000000000000")
 
-    fun makeSpO2StopCommand(): ByteArray = hex("2300000000000000000000000000000000000000")
+    // Kept as aliases so existing SpO2-trigger call sites keep working.
+    fun makeSpO2StartCommand(): ByteArray = makeCombinedMeasurementStartCommand()
+    fun makeSpO2StopCommand(): ByteArray = makeCombinedMeasurementStopCommand()
 
-    fun makeFindRingCommand(): ByteArray = hex("040a000000000000000000000000000000000000")
+    /**
+     * User info / personal data (0x02 CMD_SET_USER_INFO). Feeds the ring's blood-sugar
+     * (profile-derived estimate) and calorie algorithms. Blood pressure is a direct PPG sensor
+     * reading and does NOT use user info. Mirrors the official SXR SDK's setUserInfo:
+     *   byte[0] = 0x02
+     *   byte[1] = age (low 7 bits) | 0x80 if male
+     *   byte[2] = height (cm)
+     *   byte[3] = weight (kg)
+     *   byte[4] = unit flag (0 = metric)
+     * Always transmitted in metric so the ring interprets values unambiguously.
+     */
+    fun makeUserInfoCommand(ageYears: Int, isMale: Boolean, heightCm: Int, weightKg: Int): ByteArray {
+        val bytes = ByteArray(20)
+        bytes[0] = JringCommandId.USER_INFO
+        val age = ageYears.coerceIn(0, 127)
+        bytes[1] = (age or if (isMale) 0x80 else 0x00).toByte()
+        bytes[2] = heightCm.coerceIn(0, 255).toByte()
+        bytes[3] = weightKg.coerceIn(0, 255).toByte()
+        bytes[4] = 0x00 // metric
+        return bytes
+    }
+
+    /**
+     * Blood-pressure calibration (0x33). Sends a reference systolic/diastolic (e.g. from a cuff)
+     * so the ring offsets its readings to match. Mirrors the official SDK's setBPAdjust: each value
+     * is a little-endian u16.
+     *   byte[0] = 0x33  byte[1..2] = systolic (LE u16)  byte[3..4] = diastolic (LE u16)
+     */
+    fun makeBPAdjustCommand(systolic: Int, diastolic: Int): ByteArray {
+        val bytes = ByteArray(20)
+        bytes[0] = JringCommandId.BP_ADJUST
+        bytes[1] = (systolic and 0xff).toByte()
+        bytes[2] = ((systolic shr 8) and 0xff).toByte()
+        bytes[3] = (diastolic and 0xff).toByte()
+        bytes[4] = ((diastolic shr 8) and 0xff).toByte()
+        return bytes
+    }
+
+    fun makeFindRingCommand(): ByteArray     = hex("040a000000000000000000000000000000000000")
+    fun makeStopFindRingCommand(): ByteArray = hex("0400000000000000000000000000000000000000")
 
     fun makeGoalCommand(steps: Int): ByteArray {
         val bytes = ByteArray(20)

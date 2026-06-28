@@ -17,8 +17,11 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import space.linuxct.pulseloop.data.datastore.AppPreferencesDataStore
 import space.linuxct.pulseloop.domain.model.RingConnectionState
+import space.linuxct.pulseloop.domain.model.WearableCapability
 import space.linuxct.pulseloop.domain.repository.DeviceRepository
+import space.linuxct.pulseloop.domain.repository.ProfileRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -36,6 +39,8 @@ private const val BACKGROUND_HR_INTERVAL_MS = BACKGROUND_INTERVAL_MS
 class RingStartupCoordinator @Inject constructor(
     @ApplicationContext private val context: Context,
     private val deviceRepo: DeviceRepository,
+    private val profileRepo: ProfileRepository,
+    private val prefs: AppPreferencesDataStore,
     private val bleClient: RingBLEClient
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -60,7 +65,7 @@ class RingStartupCoordinator @Inject constructor(
                             // window has elapsed. The service will start on the next foreground event.
                             Log.w(TAG, "Could not start foreground service: ${e.message}")
                         }
-                        startSyncLoop(syncImmediately = true)
+                        startSyncLoop(syncImmediately = true, cleanupOnConnect = true)
                     }
                     RingConnectionState.DISCONNECTED,
                     RingConnectionState.IDLE -> {
@@ -107,29 +112,66 @@ class RingStartupCoordinator @Inject constructor(
         }
     }
 
-    private fun startSyncLoop(syncImmediately: Boolean) {
+    private fun startSyncLoop(syncImmediately: Boolean, cleanupOnConnect: Boolean = false) {
         val interval = if (isForeground) FOREGROUND_INTERVAL_MS else BACKGROUND_INTERVAL_MS
         val label = if (isForeground) "1-min" else "15-min"
         syncJob?.cancel()
         lastHRTriggerMs = 0L  // reset so the first sync after connect/foreground always measures HR
         syncJob = scope.launch {
             if (syncImmediately) {
+                if (cleanupOnConnect) {
+                    // Ring may have been mid-HR or mid-SpO2 when it disconnected. Send stop
+                    // commands first so the ring exits any stuck measurement loop before we
+                    // send sync queries. The write queue serialises delivery, but the ring's
+                    // firmware needs a moment to process the stops before new commands arrive.
+                    Log.d(TAG, "Sending stop commands to clear any in-progress ring measurements")
+                    bleClient.stopHR()
+                    bleClient.stopSpO2()
+                    delay(500L)
+                }
                 Log.d(TAG, "Immediate sync ($label mode)")
                 bleClient.syncNow()
+                bleClient.refreshBattery()
+                if (cleanupOnConnect) pushUserSettings()
                 delay(SYNC_SETTLE_MS)
                 triggerAutoHR()
-                triggerAutoSpO2()
+                triggerAutoCombinedVitals()
             }
             while (true) {
                 delay(interval)
                 if (bleClient.connectionState.value == RingConnectionState.CONNECTED) {
                     Log.d(TAG, "$label sync tick")
                     bleClient.syncNow()
+                    bleClient.refreshBattery()
                     delay(SYNC_SETTLE_MS)
                     triggerAutoHR()
-                    triggerAutoSpO2()
+                    triggerAutoCombinedVitals()
                 }
             }
+        }
+    }
+
+    /**
+     * Push the user's physical profile (0x02) and any blood-pressure calibration (0x33) to the ring
+     * on connect, so its blood-sugar (profile-derived) estimate and BP offset are accurate. No-ops on
+     * Colmi (the sync-engine methods default to no-op there). Mirrors the reference fork's
+     * pushUserSettingsFromStore().
+     */
+    private suspend fun pushUserSettings() {
+        val profile = profileRepo.getProfile()
+        val age = profile?.age
+        val heightCm = profile?.heightCm
+        val weightKg = profile?.weightKg?.toInt()
+        if (age != null && heightCm != null && weightKg != null) {
+            val isMale = profile.biologicalSex?.equals("male", ignoreCase = true) == true
+            Log.d(TAG, "Pushing user profile to ring (age=$age, male=$isMale, h=$heightCm, w=$weightKg)")
+            bleClient.setUserInfo(age, isMale, heightCm, weightKg)
+        }
+        val sys = prefs.bpCalSystolic.first()
+        val dia = prefs.bpCalDiastolic.first()
+        if (sys in 1..300 && dia in 1..300) {
+            Log.d(TAG, "Pushing BP calibration to ring (sys=$sys, dia=$dia)")
+            bleClient.setBloodPressureAdjust(sys, dia)
         }
     }
 
@@ -157,25 +199,38 @@ class RingStartupCoordinator @Inject constructor(
         Log.d(TAG, "HR auto-measurement complete")
     }
 
-    private suspend fun triggerAutoSpO2() {
+    /**
+     * Every sync pulls the on-demand vitals after HR. On the Jring the SpO2 command (0x23) returns a
+     * COMBINED 0x24 reading — SpO2 + blood pressure + blood sugar + fatigue + stress in one response —
+     * so a single trigger records all of them together. Colmi has no combined command, so it falls
+     * back to its big-data SpO2 request (its stress/HRV/temp come from the startup history sweep).
+     */
+    private suspend fun triggerAutoCombinedVitals() {
         if (bleClient.spO2Active) {
-            Log.d(TAG, "SpO2 already in progress — skipping auto-trigger")
+            Log.d(TAG, "SpO2/combined already in progress — skipping auto-trigger")
             return
         }
         if (bleClient.connectionState.value != RingConnectionState.CONNECTED) {
-            Log.d(TAG, "Ring not connected — skipping SpO2 auto-trigger")
+            Log.d(TAG, "Ring not connected — skipping combined-vitals auto-trigger")
             return
         }
-        Log.d(TAG, "Auto-triggering SpO2 measurement")
-        bleClient.measureSpO2()
-        // Wait up to 30 s for a result, then stop regardless
+        val supportsCombined = bleClient.capabilities.value.contains(WearableCapability.BLOOD_PRESSURE)
+        if (supportsCombined) {
+            Log.d(TAG, "Auto-triggering combined vitals (SpO2 + BP + blood sugar + fatigue + stress)")
+            bleClient.measureCombined()
+        } else {
+            Log.d(TAG, "Auto-triggering SpO2 measurement")
+            bleClient.measureSpO2()
+        }
+        // Wait up to 30 s for a result, then stop regardless. The 0x24 combined response surfaces as
+        // Spo2Result/Spo2Complete, and the BP/sugar/fatigue/stress rows persist on arrival regardless.
         withTimeoutOrNull(30_000L) {
             PulseEventBus.events.filter {
                 it is PulseEvent.Spo2Result || it is PulseEvent.Spo2Complete
             }.first()
         }
         bleClient.stopSpO2()
-        Log.d(TAG, "SpO2 auto-measurement complete")
+        Log.d(TAG, "Combined-vitals auto-measurement complete")
     }
 
     private fun stopSyncLoop() {

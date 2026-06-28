@@ -10,6 +10,7 @@ sealed class NavRoute(val route: String) {
 
     // Pushed destinations
     data object Settings        : NavRoute("settings")
+    data object DataExport      : NavRoute("data_export")
     data object Pairing         : NavRoute("pairing")
     data object Debug           : NavRoute("debug")
     data object RecordSelect    : NavRoute("record/select")

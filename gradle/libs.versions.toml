@@ -22,6 +22,9 @@ play-location        = "21.3.0"
 vico                 = "2.0.0-beta.4"
 core-ktx             = "1.16.0"
 splashscreen         = "1.0.1"
+protobuf             = "3.25.5"
+protobuf-plugin      = "0.9.4"
+junit                = "4.13.2"
 
 [plugins]
 android-application    = { id = "com.android.application",                    version.ref = "agp"    }
@@ -31,6 +34,7 @@ kotlin-serialization   = { id = "org.jetbrains.kotlin.plugin.serialization",  ve
 hilt                   = { id = "com.google.dagger.hilt.android",             version.ref = "hilt"   }
 ksp                    = { id = "com.google.devtools.ksp",                    version.ref = "ksp"    }
 room                   = { id = "androidx.room",                              version.ref = "room"   }
+protobuf               = { id = "com.google.protobuf",                        version.ref = "protobuf-plugin" }
 
 [libraries]
 # Core
@@ -78,6 +82,12 @@ work-runtime-ktx                = { group = "androidx.work",                  na
 
 # Security
 security-crypto                 = { group = "androidx.security",              name = "security-crypto",                     version.ref = "security-crypto"    }
+
+# Protobuf (OTLP export)
+protobuf-javalite               = { group = "com.google.protobuf",            name = "protobuf-javalite",                   version.ref = "protobuf"           }
+
+# Test
+junit                           = { group = "junit",                          name = "junit",                               version.ref = "junit"              }
 
 # Network
 retrofit                        = { group = "com.squareup.retrofit2",         name = "retrofit",                            version.ref = "retrofit"           }

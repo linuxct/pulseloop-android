@@ -16,13 +16,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -53,6 +52,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -68,15 +68,20 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import space.linuxct.pulseloop.R
 import space.linuxct.pulseloop.ble.PulseEvent
 import space.linuxct.pulseloop.ble.PulseEventBus
 import space.linuxct.pulseloop.data.db.entities.ActivityGpsPointEntity
 import space.linuxct.pulseloop.data.db.entities.ActivitySessionEntity
 import space.linuxct.pulseloop.domain.model.ActivitySessionStatus
 import space.linuxct.pulseloop.domain.repository.ActivityRepository
+import space.linuxct.pulseloop.domain.repository.ProfileRepository
 import space.linuxct.pulseloop.ui.charts.HrLineChart
+import space.linuxct.pulseloop.ui.components.HrZoneBar
+import space.linuxct.pulseloop.ui.components.LargeScreenTitle
 import space.linuxct.pulseloop.ui.components.PrimaryButton
 import space.linuxct.pulseloop.ui.components.PulseCard
 import space.linuxct.pulseloop.ui.components.RouteMapCard
@@ -86,6 +91,8 @@ import space.linuxct.pulseloop.ui.navigation.NavRoute
 import space.linuxct.pulseloop.ui.screens.activity.activityLabel
 import space.linuxct.pulseloop.ui.screens.activity.formatDuration
 import space.linuxct.pulseloop.ui.theme.LocalPulseColors
+import space.linuxct.pulseloop.ui.theme.LocalUiMode
+import space.linuxct.pulseloop.ui.theme.UiMode
 import space.linuxct.pulseloop.workout.LiveWorkoutManager
 import space.linuxct.pulseloop.workout.WorkoutLiveState
 import javax.inject.Inject
@@ -109,6 +116,28 @@ private val ACTIVITY_KINDS = listOf(
     ActivityKind("other", "Other", Icons.Default.FitnessCenter, "Gym, HIIT, or other activity", gpsCapable = false)
 )
 
+@Composable
+private fun ActivityKind.localizedLabel(): String = when (type) {
+    "run" -> stringResource(R.string.activity_kind_run)
+    "walk" -> stringResource(R.string.activity_kind_walk)
+    "cycle" -> stringResource(R.string.activity_kind_cycle)
+    "swim" -> stringResource(R.string.activity_kind_swim)
+    "hike" -> stringResource(R.string.activity_kind_hike)
+    "other" -> stringResource(R.string.activity_kind_other)
+    else -> label
+}
+
+@Composable
+private fun ActivityKind.localizedHelper(): String = when (type) {
+    "run" -> stringResource(R.string.activity_kind_run_helper)
+    "walk" -> stringResource(R.string.activity_kind_walk_helper)
+    "cycle" -> stringResource(R.string.activity_kind_cycle_helper)
+    "swim" -> stringResource(R.string.activity_kind_swim_helper)
+    "hike" -> stringResource(R.string.activity_kind_hike_helper)
+    "other" -> stringResource(R.string.activity_kind_other_helper)
+    else -> helper
+}
+
 // ─── RecordSelectScreen ───────────────────────────────────────────────────────
 
 @HiltViewModel
@@ -123,6 +152,7 @@ class RecordSelectViewModel @Inject constructor(
 @Composable
 fun RecordSelectScreen(navController: NavController, vm: RecordSelectViewModel = hiltViewModel()) {
     val colors = LocalPulseColors.current
+    val uiMode = LocalUiMode.current
     val context = LocalContext.current
     var selected by remember { mutableStateOf("run") }
     var useGps by remember { mutableStateOf(true) }
@@ -138,37 +168,44 @@ fun RecordSelectScreen(navController: NavController, vm: RecordSelectViewModel =
         }
     }
 
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .background(colors.background)
     ) {
-        LazyColumn(
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.fillMaxSize()
-        ) {
-            item {
-                Text(
-                    "CHOOSE ACTIVITY",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = colors.textSecondary,
-                    letterSpacing = 1.sp
-                )
-            }
+        if (uiMode == UiMode.MATERIAL_YOU) {
+            LargeScreenTitle(title = stringResource(R.string.record_select_header))
+        } else {
+            Text(
+                stringResource(R.string.record_select_header).uppercase(),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = colors.textSecondary,
+                letterSpacing = 1.sp,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
+            )
+        }
 
-            item {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.height(380.dp)
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            ACTIVITY_KINDS.chunked(2).forEach { rowKinds ->
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(ACTIVITY_KINDS) { kind ->
+                    rowKinds.forEach { kind ->
                         val isSelected = kind.type == selected
                         Box(
                             modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
                                 .clip(RoundedCornerShape(24.dp))
                                 .background(if (isSelected) colors.accentSoft else colors.card)
                                 .border(1.dp, if (isSelected) colors.accent else colors.borderSubtle, RoundedCornerShape(24.dp))
@@ -188,61 +225,62 @@ fun RecordSelectScreen(navController: NavController, vm: RecordSelectViewModel =
                                         .size(46.dp)
                                         .background(if (isSelected) colors.accentSoft else colors.cardSoft, CircleShape)
                                 ) {
-                                    Icon(kind.icon, contentDescription = null, tint = if (isSelected) colors.accent else colors.textSecondary, modifier = Modifier.size(22.dp))
+                                    Icon(kind.icon, contentDescription = null, tint = if (isSelected) colors.onAccentSoft else colors.textSecondary, modifier = Modifier.size(22.dp))
                                 }
-                                Text(kind.label, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = colors.textPrimary)
-                                Text(kind.helper, fontSize = 12.sp, color = colors.textMuted, maxLines = 2)
+                                Text(kind.localizedLabel(), fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = if (isSelected) colors.onAccentSoft else colors.textPrimary)
+                                Text(kind.localizedHelper(), fontSize = 12.sp, color = if (isSelected) colors.onAccentSoft.copy(alpha = 0.7f) else colors.textMuted, maxLines = 2)
                             }
                         }
                     }
                 }
             }
+        }
 
-            // GPS toggle
-            item {
-                PulseCard(modifier = Modifier.fillMaxWidth()) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("Use GPS route", fontWeight = FontWeight.Medium, fontSize = 15.sp, color = colors.textPrimary)
-                            Text(
-                                if (gpsCapable) "Track your route on a map" else "Not available for this activity",
-                                fontSize = 12.sp, color = colors.textMuted
-                            )
-                        }
-                        Switch(
-                            checked = useGps && gpsCapable,
-                            onCheckedChange = { if (gpsCapable) useGps = it },
-                            enabled = gpsCapable,
-                            colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = colors.accent)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 16.dp)
+                .navigationBarsPadding(),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            PulseCard(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(stringResource(R.string.record_gps_toggle_label), fontWeight = FontWeight.Medium, fontSize = 15.sp, color = colors.textPrimary)
+                        Text(
+                            if (gpsCapable) stringResource(R.string.record_gps_toggle_helper_on) else stringResource(R.string.record_gps_toggle_helper_off),
+                            fontSize = 12.sp, color = colors.textMuted
                         )
                     }
+                    Switch(
+                        checked = useGps && gpsCapable,
+                        onCheckedChange = { if (gpsCapable) useGps = it },
+                        enabled = gpsCapable,
+                        colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = colors.accent)
+                    )
                 }
             }
 
-            item {
-                PrimaryButton(title = "Start", onClick = {
-                    val willUseGps = useGps && gpsCapable
-                    if (willUseGps) {
-                        val already = ContextCompat.checkSelfPermission(
-                            context, Manifest.permission.ACCESS_FINE_LOCATION
-                        ) == PackageManager.PERMISSION_GRANTED
-                        if (!already) {
-                            locationPermLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-                            return@PrimaryButton
-                        }
+            PrimaryButton(title = stringResource(R.string.action_start), onClick = {
+                val willUseGps = useGps && gpsCapable
+                if (willUseGps) {
+                    val already = ContextCompat.checkSelfPermission(
+                        context, Manifest.permission.ACCESS_FINE_LOCATION
+                    ) == PackageManager.PERMISSION_GRANTED
+                    if (!already) {
+                        locationPermLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                        return@PrimaryButton
                     }
-                    scope.launch {
-                        val session = vm.startSession(type = selected, useGps = willUseGps)
-                        navController.navigate(NavRoute.RecordLive(session.id).route)
-                    }
-                })
-            }
-
-            item { Spacer(modifier = Modifier.height(80.dp)) }
+                }
+                scope.launch {
+                    val session = vm.startSession(type = selected, useGps = willUseGps)
+                    navController.navigate(NavRoute.RecordLive(session.id).route)
+                }
+            })
         }
     }
 }
@@ -252,9 +290,21 @@ fun RecordSelectScreen(navController: NavController, vm: RecordSelectViewModel =
 @HiltViewModel
 class RecordLiveViewModel @Inject constructor(
     private val liveWorkoutManager: LiveWorkoutManager,
-    private val activityRepo: ActivityRepository
+    private val activityRepo: ActivityRepository,
+    private val profileRepo: ProfileRepository
 ) : ViewModel() {
     val liveState: StateFlow<WorkoutLiveState?> = liveWorkoutManager.liveState
+
+    /** Unthrottled latest HR sample, for the responsive live zone indicator. */
+    val latestHR: StateFlow<Int?> = liveWorkoutManager.latestHR
+
+    /** Estimated max HR (220 − age); falls back to [DEFAULT_MAX_HR] when age is unknown. */
+    val maxHr: StateFlow<Int> = profileRepo.observeProfile()
+        .map { profile ->
+            val age = profile?.age
+            if (age != null && age in 5..120) 220 - age else DEFAULT_MAX_HR
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DEFAULT_MAX_HR)
 
     private val _liveRoute = MutableStateFlow<List<LatLng>>(emptyList())
     val liveRoute: StateFlow<List<LatLng>> = _liveRoute.asStateFlow()
@@ -280,12 +330,19 @@ class RecordLiveViewModel @Inject constructor(
     suspend fun finish(session: ActivitySessionEntity) = liveWorkoutManager.finish(session)
     suspend fun cancel(session: ActivitySessionEntity) = liveWorkoutManager.cancel(session)
     suspend fun ensureActive(session: ActivitySessionEntity) = liveWorkoutManager.ensureActive(session)
+
+    companion object {
+        private const val DEFAULT_MAX_HR = 190
+    }
 }
 
 @Composable
 fun RecordLiveScreen(sessionId: String, navController: NavController, vm: RecordLiveViewModel = hiltViewModel()) {
     val colors = LocalPulseColors.current
     val liveState by vm.liveState.collectAsState()
+    val latestHr by vm.latestHR.collectAsState()
+    val maxHr by vm.maxHr.collectAsState()
+    val currentHr = latestHr ?: liveState?.latestHR
     val sessionsFlow = remember { vm.observeSession(sessionId) }
     val sessions by sessionsFlow.collectAsState(initial = emptyList())
     val session = sessions.firstOrNull { it.id == sessionId }
@@ -335,7 +392,7 @@ fun RecordLiveScreen(sessionId: String, navController: NavController, vm: Record
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
-                            "${if (isPaused) "Paused" else "Recording"} ${activityLabel(session.activityType)}",
+                            "${if (isPaused) stringResource(R.string.record_live_status_paused) else stringResource(R.string.record_live_status_recording)} ${activityLabel(session.activityType)}",
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 15.sp,
                             color = colors.textPrimary
@@ -347,7 +404,7 @@ fun RecordLiveScreen(sessionId: String, navController: NavController, vm: Record
                             fontWeight = FontWeight.SemiBold,
                             color = if (isPaused) colors.textMuted else colors.textPrimary
                         )
-                        Text("DURATION", fontSize = 11.sp, fontWeight = FontWeight.Medium, color = colors.textMuted, letterSpacing = 1.4.sp)
+                        Text(stringResource(R.string.label_duration).uppercase(), fontSize = 11.sp, fontWeight = FontWeight.Medium, color = colors.textMuted, letterSpacing = 1.4.sp)
                     }
                 }
             }
@@ -360,14 +417,14 @@ fun RecordLiveScreen(sessionId: String, navController: NavController, vm: Record
                 ) {
                     if (session.useGps) {
                         LiveStatTile(
-                            label = "Distance",
+                            label = stringResource(R.string.label_distance),
                             value = liveState?.distanceMeters?.let { "%.2f km".format(it / 1000) } ?: "—",
                             modifier = Modifier.weight(1f)
                         )
                     }
                     LiveStatTile(
-                        label = "Heart rate",
-                        value = liveState?.latestHR?.let { "$it bpm" } ?: "—",
+                        label = stringResource(R.string.label_heart_rate),
+                        value = currentHr?.let { "$it bpm" } ?: "—",
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -377,13 +434,13 @@ fun RecordLiveScreen(sessionId: String, navController: NavController, vm: Record
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     LiveStatTile(
-                        label = "SpO2",
+                        label = stringResource(R.string.label_spo2),
                         value = liveState?.latestSpO2?.let { "$it%" } ?: "—",
                         modifier = Modifier.weight(1f)
                     )
                     if (session.useGps) {
                         LiveStatTile(
-                            label = "Pace",
+                            label = stringResource(R.string.label_pace),
                             value = liveState?.paceSecondsPerKm?.let { sec ->
                                 "%d:%02d /km".format((sec / 60).toInt(), (sec % 60).toInt())
                             } ?: "—",
@@ -391,6 +448,15 @@ fun RecordLiveScreen(sessionId: String, navController: NavController, vm: Record
                         )
                     }
                 }
+            }
+
+            // Heart-rate zone indicator (live exercise only)
+            item {
+                HrZoneBar(
+                    currentHr = currentHr,
+                    maxHr = maxHr,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
 
             // Live GPS map (shown once tracking starts)
@@ -411,7 +477,7 @@ fun RecordLiveScreen(sessionId: String, navController: NavController, vm: Record
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     SecondaryButton(
-                        title = if (isPaused) "Resume" else "Pause",
+                        title = if (isPaused) stringResource(R.string.action_resume) else stringResource(R.string.action_pause),
                         onClick = {
                             scope.launch {
                                 if (isPaused) vm.resume(session) else vm.pause(session)
@@ -420,14 +486,14 @@ fun RecordLiveScreen(sessionId: String, navController: NavController, vm: Record
                         modifier = Modifier.weight(1f)
                     )
                     PrimaryButton(
-                        title = "Finish",
+                        title = stringResource(R.string.action_finish),
                         onClick = { showFinishDialog = true },
                         modifier = Modifier.weight(1f)
                     )
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 SecondaryButton(
-                    title = "Discard",
+                    title = stringResource(R.string.action_discard),
                     onClick = { showDiscardDialog = true }
                 )
             }
@@ -438,8 +504,8 @@ fun RecordLiveScreen(sessionId: String, navController: NavController, vm: Record
         if (showFinishDialog) {
             AlertDialog(
                 onDismissRequest = { showFinishDialog = false },
-                title = { Text("Finish workout?") },
-                text = { Text("Your workout will be saved with its time and ring measurements.") },
+                title = { Text(stringResource(R.string.dialog_finish_workout_title)) },
+                text = { Text(stringResource(R.string.dialog_finish_workout_message)) },
                 confirmButton = {
                     TextButton(onClick = {
                         showFinishDialog = false
@@ -449,9 +515,9 @@ fun RecordLiveScreen(sessionId: String, navController: NavController, vm: Record
                                 popUpTo(NavRoute.Activity.route) { inclusive = false }
                             }
                         }
-                    }) { Text("Finish") }
+                    }) { Text(stringResource(R.string.action_finish)) }
                 },
-                dismissButton = { TextButton(onClick = { showFinishDialog = false }) { Text("Keep recording") } },
+                dismissButton = { TextButton(onClick = { showFinishDialog = false }) { Text(stringResource(R.string.action_keep_recording)) } },
                 containerColor = colors.card
             )
         }
@@ -459,8 +525,8 @@ fun RecordLiveScreen(sessionId: String, navController: NavController, vm: Record
         if (showDiscardDialog) {
             AlertDialog(
                 onDismissRequest = { showDiscardDialog = false },
-                title = { Text("Discard workout?") },
-                text = { Text("This recording will be deleted and won't count toward your activity.") },
+                title = { Text(stringResource(R.string.dialog_discard_workout_title)) },
+                text = { Text(stringResource(R.string.dialog_discard_workout_message)) },
                 confirmButton = {
                     TextButton(onClick = {
                         showDiscardDialog = false
@@ -468,9 +534,9 @@ fun RecordLiveScreen(sessionId: String, navController: NavController, vm: Record
                             vm.cancel(session)
                             navController.popBackStack(NavRoute.Activity.route, inclusive = false)
                         }
-                    }) { Text("Discard", color = colors.danger) }
+                    }) { Text(stringResource(R.string.action_discard), color = colors.danger) }
                 },
-                dismissButton = { TextButton(onClick = { showDiscardDialog = false }) { Text("Keep recording") } },
+                dismissButton = { TextButton(onClick = { showDiscardDialog = false }) { Text(stringResource(R.string.action_keep_recording)) } },
                 containerColor = colors.card
             )
         }
@@ -574,9 +640,9 @@ fun RecordSummaryScreen(sessionId: String, navController: NavController, vm: Rec
                                 .size(72.dp)
                                 .background(colors.accentSoft, CircleShape)
                         ) {
-                            Icon(Icons.AutoMirrored.Filled.DirectionsRun, contentDescription = null, tint = colors.accent, modifier = Modifier.size(36.dp))
+                            Icon(Icons.AutoMirrored.Filled.DirectionsRun, contentDescription = null, tint = colors.onAccentSoft, modifier = Modifier.size(36.dp))
                         }
-                        Text("WORKOUT SAVED", fontSize = 11.sp, fontWeight = FontWeight.Medium, color = colors.accent, letterSpacing = 1.8.sp)
+                        Text(stringResource(R.string.record_summary_saved_label).uppercase(), fontSize = 11.sp, fontWeight = FontWeight.Medium, color = colors.accent, letterSpacing = 1.8.sp)
                         Text(activityLabel(s.activityType), fontWeight = FontWeight.SemiBold, fontSize = 24.sp, color = colors.textPrimary)
                         val dateFmt = java.text.SimpleDateFormat("EEE, MMM d · h:mm a", java.util.Locale.getDefault())
                         Text(dateFmt.format(java.util.Date(s.startedAt)), fontSize = 13.sp, color = colors.textMuted)
@@ -589,13 +655,13 @@ fun RecordSummaryScreen(sessionId: String, navController: NavController, vm: Rec
                 PulseCard(modifier = Modifier.fillMaxWidth()) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                         if (s.useGps) {
-                            StatColumn("%.2f".format(s.totalDistanceMeters / 1000), "KM")
+                            StatColumn("%.2f".format(s.totalDistanceMeters / 1000), stringResource(R.string.unit_km).uppercase())
                             Spacer(Modifier.size(1.dp))
                         }
-                        StatColumn(duration?.let { formatDuration(it) } ?: "—", "DURATION")
+                        StatColumn(duration?.let { formatDuration(it) } ?: "—", stringResource(R.string.label_duration).uppercase())
                         if (s.totalCalories > 0) {
                             Spacer(Modifier.size(1.dp))
-                            StatColumn("${s.totalCalories.toInt()}", "CALORIES")
+                            StatColumn("${s.totalCalories.toInt()}", stringResource(R.string.label_calories).uppercase())
                         }
                     }
                 }
@@ -617,7 +683,7 @@ fun RecordSummaryScreen(sessionId: String, navController: NavController, vm: Rec
                 item {
                     PulseCard(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.fillMaxWidth()) {
-                            Text("HEART RATE", fontSize = 11.sp, fontWeight = FontWeight.Medium, color = colors.textMuted, letterSpacing = 1.sp)
+                            Text(stringResource(R.string.label_heart_rate).uppercase(), fontSize = 11.sp, fontWeight = FontWeight.Medium, color = colors.textMuted, letterSpacing = 1.sp)
                             Spacer(modifier = Modifier.height(12.dp))
                             Box(modifier = Modifier.fillMaxWidth().height(120.dp)) {
                                 HrLineChart(samples = hrSamples)
@@ -629,11 +695,11 @@ fun RecordSummaryScreen(sessionId: String, navController: NavController, vm: Rec
 
             // Delete button
             item {
-                SecondaryButton(title = "Delete Workout", onClick = { showDeleteDialog = true })
+                SecondaryButton(title = stringResource(R.string.action_delete_workout), onClick = { showDeleteDialog = true })
             }
 
             item {
-                PrimaryButton(title = "Done", onClick = {
+                PrimaryButton(title = stringResource(R.string.action_done), onClick = {
                     navController.popBackStack(NavRoute.Activity.route, inclusive = false)
                 })
             }
@@ -644,15 +710,15 @@ fun RecordSummaryScreen(sessionId: String, navController: NavController, vm: Rec
         if (showDeleteDialog) {
             AlertDialog(
                 onDismissRequest = { showDeleteDialog = false },
-                title = { Text("Delete this workout?") },
-                text = { Text("This permanently removes the workout and its data. This can't be undone.") },
+                title = { Text(stringResource(R.string.dialog_delete_workout_title)) },
+                text = { Text(stringResource(R.string.dialog_delete_workout_message)) },
                 confirmButton = {
                     TextButton(onClick = {
                         showDeleteDialog = false
                         vm.deleteSession { navController.popBackStack(NavRoute.Activity.route, inclusive = false) }
-                    }) { Text("Delete", color = colors.danger) }
+                    }) { Text(stringResource(R.string.action_delete), color = colors.danger) }
                 },
-                dismissButton = { TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") } },
+                dismissButton = { TextButton(onClick = { showDeleteDialog = false }) { Text(stringResource(R.string.action_cancel)) } },
                 containerColor = colors.card
             )
         }

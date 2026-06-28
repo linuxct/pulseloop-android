@@ -12,6 +12,7 @@ plugins {
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
+    alias(libs.plugins.protobuf)
 }
 
 android {
@@ -22,8 +23,8 @@ android {
         applicationId = "space.linuxct.pulseloop"
         minSdk = 35
         targetSdk = 37
-        versionCode = 9
-        versionName = "1.1.0"
+        versionCode = 11
+        versionName = "2.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         val localProps = Properties().apply {
             rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use(::load)
@@ -80,6 +81,34 @@ room {
     schemaDirectory("$projectDir/schemas")
 }
 
+// Forward OTLP live-send smoke-test config (-Dotlp.endpoint / -Dotlp.auth) into the forked
+// test JVM, and force a rerun only when those are present (so the live test actually hits the net).
+tasks.withType<Test>().configureEach {
+    val endpoint = System.getProperty("otlp.endpoint")
+    val auth = System.getProperty("otlp.auth")
+    if (endpoint != null) systemProperty("otlp.endpoint", endpoint)
+    if (auth != null) systemProperty("otlp.auth", auth)
+    if (endpoint != null) outputs.upToDateWhen { false }
+    testLogging { showStandardStreams = true }
+}
+
+// Hand-built OTLP/HTTP protobuf export: generate Android-lite Java classes from the
+// vendored, trimmed OTLP metrics protos in src/main/proto. (No OpenTelemetry SDK dependency.)
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.25.5"
+    }
+    generateProtoTasks {
+        all().forEach { task ->
+            task.builtins {
+                create("java") {
+                    option("lite")
+                }
+            }
+        }
+    }
+}
+
 dependencies {
     // Core
     implementation(libs.core.ktx)
@@ -128,6 +157,9 @@ dependencies {
     // Security
     implementation(libs.security.crypto)
 
+    // Protobuf (OTLP export wire format)
+    implementation(libs.protobuf.javalite)
+
     // Network
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.gson)
@@ -150,4 +182,7 @@ dependencies {
     implementation(libs.vico.compose)
     implementation(libs.vico.compose.m3)
     implementation(libs.vico.core)
+
+    // Test
+    testImplementation(libs.junit)
 }
